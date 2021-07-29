@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Local token encryption
+
+## Changed
+- `get_auth_parts` no longer takes a redirect uri
+
+## Fixed
+- Auth failing for "invalid_client", seems to be an issue on MAL's side when the parameter `redirect_uri` is present. Only applications with one URI registered with the API are supported unless this issue is resolved.
+
+## [v0.2.0]
+### Added 
+- Improved docs for some MALClient functions
+
+## Changed
+- `get_auth_parts` now generates a random state
+- `get_auth_parts` now allows for a specified redirect uri
+- `auth` now takes a state and a redirect
 
 ## [v0.2.0]
 ### Added 
