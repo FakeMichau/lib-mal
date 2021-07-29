@@ -13,14 +13,12 @@ use model::{
 
 use aes_gcm::aead::{Aead, NewAead};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
-use pkce;
 use rand::random;
 use reqwest::{Method, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::Write,
-    path::Path,
     path::PathBuf,
     str,
     time::SystemTime,
@@ -97,15 +95,15 @@ impl MALClient {
             n_a = true;
         }
 
-        let me = MALClient {
+        MALClient {
             client_secret: secret.to_owned(),
             dirs: dir,
             need_auth: n_a,
             access_token: token,
             client,
             caching: will_cache,
-        };
-        me
+        }
+        
     }
 
 
@@ -460,16 +458,16 @@ impl MALClient {
         let params = {
             let mut tmp = vec![];
             if let Some(bid) = board_id {
-                tmp.push(format!("board_id={}", bid.to_string()));
+                tmp.push(format!("board_id={}", bid));
             }
             if let Some(bid) = subboard_id {
-                tmp.push(format!("subboard_id={}", bid.to_string()));
+                tmp.push(format!("subboard_id={}", bid));
             }
             if let Some(bid) = query {
-                tmp.push(format!("q={}", bid.to_string()));
+                tmp.push(format!("q={}", bid));
             }
             if let Some(bid) = topic_user_name {
-                tmp.push(format!("topic_user_name={}", bid.to_string()));
+                tmp.push(format!("topic_user_name={}", bid));
             }
             if let Some(bid) = user_name {
                 tmp.push(format!("user_name={}", bid));
@@ -504,7 +502,7 @@ fn encrypt_token(toks: Tokens) -> Result<Vec<u8>, ()> {
     Ok(res)
 }
 
-fn decrypt_tokens(raw: &Vec<u8>) -> Result<Tokens, ()> {
+fn decrypt_tokens(raw: &[u8]) -> Result<Tokens, ()> {
     let key = Key::from_slice(b"one two three four five six seve");
     let cypher = Aes256Gcm::new(&key);
     let nonce = Nonce::from_slice(b"but the eart");
