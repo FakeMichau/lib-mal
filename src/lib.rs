@@ -427,7 +427,6 @@ impl MALClient {
         let params = update.get_params();
         let url = format!("https://api.myanimelist.net/v2/anime/{}/my_list_status", id);
         let res = self.do_request_forms(url, params).await?;
-        println!("{}", res);
         self.parse_response(&res)
     }
 
