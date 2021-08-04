@@ -43,7 +43,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::Write,
-    path::Path,
     path::PathBuf,
     str,
     time::SystemTime,
@@ -52,14 +51,14 @@ use tiny_http::{Response, Server};
 
 ///Exposes all of the API functions for the [MyAnimeList API](https://myanimelist.net/apiconfig/references/api/v2)
 ///
-///**With the exception of all the manga-related funcitons which haven't been implemented yet**
+///**With the exception of all the manga-related functions which haven't been implemented yet**
 ///
 ///# Example
 ///```rust
 /// use lib_mal::MALClient;
 /// # async fn main() {
 /// let client = MALClient::new([YOUR_SECRET_HERE]).await;
-/// //--do authorization stuff before accessing the funcitons--//
+/// //--do authorization stuff before accessing the functions--//
 ///
 /// //Gets the details with all fields for Mobile Suit Gundam
 /// let anime = client.get_anime_details(80, None).await.expect("Couldn't get anime details");
@@ -226,7 +225,7 @@ impl MALClient {
             break;
         }
 
-        self.get_tokens(&code, &challenge).await
+        self.get_tokens(&code, challenge).await
     }
 
     async fn get_tokens(&mut self, code: &str, verifier: &str) -> Result<(), String> {
@@ -536,7 +535,7 @@ impl MALClient {
 
 fn encrypt_token(toks: Tokens) -> Result<Vec<u8>, ()> {
     let key = Key::from_slice(b"one two three four five six seve");
-    let cypher = Aes256Gcm::new(&key);
+    let cypher = Aes256Gcm::new(key);
     let nonce = Nonce::from_slice(b"but the eart");
     let plain = serde_json::to_vec(&toks).unwrap();
     let res = cypher.encrypt(nonce, plain.as_ref()).unwrap();
@@ -545,7 +544,7 @@ fn encrypt_token(toks: Tokens) -> Result<Vec<u8>, ()> {
 
 fn decrypt_tokens(raw: &[u8]) -> Result<Tokens, ()> {
     let key = Key::from_slice(b"one two three four five six seve");
-    let cypher = Aes256Gcm::new(&key);
+    let cypher = Aes256Gcm::new(key);
     let nonce = Nonce::from_slice(b"but the eart");
     let plain = cypher
         .decrypt(nonce, raw.as_ref())
