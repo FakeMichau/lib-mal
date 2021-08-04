@@ -9,7 +9,7 @@ pub mod options;
 pub struct AnimeList {
     pub data: Vec<ListNode>,
     paging: HashMap<String, Value>,
-    season: Option<HashMap<String, Value>>,
+    pub season: Option<HashMap<String, Value>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -101,11 +101,11 @@ pub struct Recommnendation {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
-    id: u32,
-    name: String,
-    location: String,
-    joined_at: String,
-    anime_statistics: HashMap<String, f32>,
+    pub id: u32,
+    pub name: String,
+    pub location: String,
+    pub joined_at: String,
+    pub anime_statistics: HashMap<String, f32>,
 }
 
 //TODO: Improve struct coverage for forum fucntions

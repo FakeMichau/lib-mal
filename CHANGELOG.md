@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.3.2]
+
 ### Fixed
 
 -   Another extraneous println
+-   Fields for the User struct being private
+-   Season field for AnimeList struct being private
+-   Typo in `MALClient::new` doc
+-   Typo in `MALClient::get_anime_details` doc
 
 ## [v0.3.1]
 
@@ -65,14 +71,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 -   Oauth2 authorization
--   `Get anime list` API funciton
+-   `Get anime list` API function
 -   `Get anime details` API function
 -   `Get anime ranking` API function
 -   `Get seasonal anime` API function
--   `Get user anime list` API funciton
+-   `Get user anime list` API function
 -   `Delete user anime list item` API function
 -   `Get forum boards` API function
 -   `Get forum topic details` API function
--   `Get forum topics` API funciton
+-   `Get forum topics` API function
 -   `Get my user information` API function
 -   Enums for available fields and request options

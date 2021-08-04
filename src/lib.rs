@@ -81,7 +81,7 @@ pub struct MALClient {
 
 impl MALClient {
     ///Creates the client and fetches the MAL tokens from the cache if available. If `caching` is
-    ///fasle or `cache_dir` is `None` the user will have to log in at the start of every session.
+    ///false or `cache_dir` is `None` the user will have to log in at the start of every session.
     ///
     ///When created client will attempt to refresh the access_token if it has expired
     pub async fn new(secret: &str, caching: bool, cache_dir: Option<PathBuf>) -> Self {
@@ -332,7 +332,7 @@ impl MALClient {
         self.parse_response(&res)
     }
 
-    ///Gets the deatils for an anime by the show's ID.
+    ///Gets the details for an anime by the show's ID.
     ///Only returns the fields specified in the `fields` parameter
     ///
     ///Returns all fields when supplied `None`
@@ -431,7 +431,6 @@ impl MALClient {
     }
 
     ///Returns the user's full anime list as an `AnimeList` struct.
-    ///If the request fails for any reason, an `Err` object with a string describing the error is returned instead
     pub async fn get_user_anime_list(&self) -> Result<AnimeList, String> {
         let url = "https://api.myanimelist.net/v2/users/@me/animelist?fields=list_status&limit=4";
         let res = self.do_request(url.to_owned()).await?;
@@ -472,6 +471,7 @@ impl MALClient {
         self.parse_response(&res)
     }
 
+    ///Returns details of the specified topic
     pub async fn get_forum_topic_detail(
         &self,
         topic_id: u32,
@@ -486,6 +486,7 @@ impl MALClient {
         self.parse_response(&res)
     }
 
+    ///Returns all topics for a given query
     pub async fn get_forum_topics(
         &self,
         board_id: Option<u32>,
