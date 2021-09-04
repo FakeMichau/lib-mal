@@ -22,4 +22,3 @@ jobs:
       env: 
         MAL_TOKEN: ${{ secrets.MAL_TOKEN }}
       run: cargo test --verbose
-      run: cargo test --doc --verbose
