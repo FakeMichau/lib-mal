@@ -1,0 +1,6 @@
+[tasks.get-token]
+script="cd tokengen; cargo run"
+
+[tasks.test]
+command="cargo"
+args=["test"]

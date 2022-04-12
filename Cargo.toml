@@ -8,7 +8,6 @@ repository = "https://github.com/AnActualEmerald/lib-mal"
 license = "GPL-3.0"
 keywords = ["api", "MyAnimeList", "MAL", "anime"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 reqwest = "0.11.10"

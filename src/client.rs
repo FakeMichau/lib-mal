@@ -118,6 +118,8 @@ impl MALClient {
     ///Listens for the OAuth2 callback from MAL on `callback_url`, which is the redirect_uri
     ///registered when obtaining the API token from MAL. Only HTTP URIs are supported right now.
     ///
+    ///# NOTE
+    ///
     ///For now only applications with a single registered URI are supported, having more than one
     ///seems to cause issues with the MAL api itself
     ///
@@ -211,7 +213,7 @@ impl MALClient {
             }
             Ok(())
         } else {
-            Err(MALError::new("Unable to get tokends", "None", text))
+            Err(MALError::new("Unable to get tokens", "None", text))
         }
     }
 
@@ -626,15 +628,15 @@ impl MALClient {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub(crate) struct TokenResponse {
-    pub token_type: String,
+    pub _token_type: String,
     pub expires_in: u32,
     pub access_token: String,
     pub refresh_token: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub(crate) struct Tokens {
     pub access_token: String,
     pub refresh_token: String,
