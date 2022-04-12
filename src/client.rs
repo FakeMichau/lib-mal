@@ -7,6 +7,7 @@ use rand::random;
 use reqwest::Client;
 use reqwest::{Method, StatusCode};
 use serde::{Deserialize, Serialize};
+use simple_log::{debug, info};
 use std::{fs::File, io::Write, path::PathBuf, str, time::SystemTime};
 use tiny_http::{Response, Server};
 
@@ -162,6 +163,7 @@ impl MALClient {
                 continue;
             }
             let res_raw = i.url();
+            debug!("raw response: {}", res_raw);
             code = res_raw
                 .split_once('=')
                 .unwrap()
@@ -269,7 +271,7 @@ impl MALClient {
             Err(_) => Err(match serde_json::from_str::<MALError>(res) {
                 Ok(o) => o,
                 Err(e) => MALError::new(
-                    "Unable to parse response",
+                    "unable to parse response",
                     &format!("{}", e),
                     res.to_string(),
                 ),
@@ -530,7 +532,6 @@ impl MALClient {
             .await;
         match res {
             Ok(r) => {
-                println!("{:?}", r.status());
                 if r.status() == StatusCode::NOT_FOUND {
                     Err(MALError::new(
                         &format!("Anime {} not found", id),

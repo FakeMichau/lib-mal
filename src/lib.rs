@@ -75,3 +75,9 @@ impl MALError {
         }
     }
 }
+
+pub mod prelude {
+    pub use crate::builder::ClientBuilder;
+    pub use crate::client::MALClient;
+    pub use crate::model::*;
+}

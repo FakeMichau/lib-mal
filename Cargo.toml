@@ -7,6 +7,11 @@ readme = "./README.md"
 repository = "https://github.com/AnActualEmerald/lib-mal"
 license = "GPL-3.0"
 keywords = ["api", "MyAnimeList", "MAL", "anime"]
+exclude = ["src/bin"]
+
+[[bin]]
+name="lib-mal-test"
+path="src/bin/main.rs"
 
 
 [dependencies]
@@ -18,6 +23,8 @@ pkce = "0.1.1"
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.79"
 bitflags = "1.3.2"
+simple-log = "1.5.1"
+
 
 [dev-dependencies]
 tokio-test = "0.4.2"
