@@ -7,6 +7,7 @@ use rand::random;
 use reqwest::Client;
 use reqwest::{Method, StatusCode};
 use serde::{Deserialize, Serialize};
+#[allow(unused_imports)]
 use simple_log::{debug, info};
 use std::{fs::File, io::Write, path::PathBuf, str, time::SystemTime};
 use tiny_http::{Response, Server};

@@ -7,7 +7,6 @@ readme = "./README.md"
 repository = "https://github.com/AnActualEmerald/lib-mal"
 license = "GPL-3.0"
 keywords = ["api", "MyAnimeList", "MAL", "anime"]
-exclude = ["src/bin"]
 
 [[bin]]
 name="lib-mal-test"

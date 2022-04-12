@@ -20,6 +20,7 @@ pub struct ClientBuilder {
     caching: bool,
 }
 
+#[allow(clippy::new_without_default)]
 impl ClientBuilder {
     ///Creates a new ClientBuilder. All fields are set to None by default.
     pub fn new() -> Self {
@@ -107,17 +108,16 @@ impl ClientBuilder {
     /// }
     pub fn build_no_refresh(self) -> MALClient {
         MALClient::new(
-            self.client_secret.unwrap_or("".to_string()),
-            self.dirs.unwrap_or(PathBuf::new()),
-            self.access_token.unwrap_or("".to_string()).clone(),
+            self.client_secret.unwrap_or_default(),
+            self.dirs.unwrap_or_default(),
+            self.access_token.unwrap_or_default(),
             Client::new(),
             self.caching,
             false,
         )
     }
 
-
-    /// Builds a `MALClient` after attempting to refresh the access token from cache 
+    /// Builds a `MALClient` after attempting to refresh the access token from cache
     ///
     /// # Example
     ///
@@ -205,7 +205,7 @@ impl ClientBuilder {
         }
 
         Ok(MALClient::new(
-            self.client_secret.unwrap_or("".to_string()),
+            self.client_secret.unwrap_or_default(),
             dir,
             token,
             client,

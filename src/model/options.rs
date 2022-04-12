@@ -76,7 +76,7 @@ pub trait Params {
     fn get_params<'a>(self) -> Vec<(&'a str, String)>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct StatusUpdate {
     status: Option<Status>,
     is_rewatching: Option<bool>,
@@ -87,22 +87,6 @@ pub struct StatusUpdate {
     rewatch_value: Option<u8>,
     tags: Option<Vec<String>>,
     comments: Option<String>,
-}
-
-impl Default for StatusUpdate {
-    fn default() -> Self {
-        StatusUpdate {
-            status: None,
-            is_rewatching: None,
-            score: None,
-            num_watched_episodes: None,
-            priority: None,
-            num_times_rewatched: None,
-            rewatch_value: None,
-            tags: None,
-            comments: None,
-        }
-    }
 }
 
 impl StatusUpdate {
