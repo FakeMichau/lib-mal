@@ -32,14 +32,14 @@ mod builder;
 mod client;
 pub mod model;
 
-
 pub use builder::ClientBuilder;
 pub use client::MALClient;
 
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+use std::error::Error;
+use std::fmt::{Debug, Display};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct MALError {
     pub error: String,
     pub message: Option<String>,
@@ -48,16 +48,23 @@ pub struct MALError {
 
 impl Display for MALError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "lib_mal encountered an error: {}", self.error)
+    }
+}
+
+impl Debug for MALError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Error: {} Message: {} Info: {}",
+            "error: {} message: {} info: {}",
             self.error,
-            self.message.as_ref().unwrap_or(&"None".to_string()),
-            self.info.as_ref().unwrap_or(&"None".to_string())
+            self.message.as_ref().unwrap_or(&"none".to_string()),
+            self.info.as_ref().unwrap_or(&"none".to_string())
         )
     }
 }
 
+impl Error for MALError {}
 
 impl MALError {
     pub fn new(msg: &str, error: &str, info: impl Into<Option<String>>) -> Self {
@@ -67,5 +74,4 @@ impl MALError {
             info: info.into(),
         }
     }
-
 }
