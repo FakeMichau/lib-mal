@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `std::error::Error` impl for `MALError`
+- `prelude` module
 
 
 ## [v0.5.0]
