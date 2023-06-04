@@ -632,7 +632,7 @@ impl MALClient {
 
 #[derive(Deserialize)]
 pub(crate) struct TokenResponse {
-    pub _token_type: String,
+    pub token_type: String,
     pub expires_in: u32,
     pub access_token: String,
     pub refresh_token: String,
