@@ -22,7 +22,7 @@ pub struct ListNode {
     pub ranking: Option<HashMap<String, u32>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ListStatus {
     pub status: Option<String>,
     pub num_episodes_watched: Option<u32>,
@@ -35,7 +35,7 @@ pub struct ListStatus {
     pub comments: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Anime {
     pub id: u32,
     pub title: String,
