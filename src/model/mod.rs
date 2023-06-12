@@ -15,7 +15,7 @@ pub struct AnimeList {
     pub season: Option<HashMap<String, Value>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ListNode {
     pub node: Anime,
     pub list_status: Option<ListStatus>,
