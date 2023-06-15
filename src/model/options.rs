@@ -87,6 +87,8 @@ pub struct StatusUpdate {
     rewatch_value: Option<u8>,
     tags: Option<Vec<String>>,
     comments: Option<String>,
+    start_date: Option<String>,
+    finish_date: Option<String>,
 }
 
 impl StatusUpdate {
@@ -122,6 +124,12 @@ impl StatusUpdate {
     }
     pub fn comments(&mut self, comments: &str) {
         self.comments = Some(comments.to_owned());
+    }    
+    pub fn start_date(&mut self, start_date: &str) {
+        self.start_date = Some(start_date.to_owned());
+    }    
+    pub fn finish_date(&mut self, finish_date: &str) {
+        self.finish_date = Some(finish_date.to_owned());
     }
 }
 
@@ -155,6 +163,12 @@ impl Params for StatusUpdate {
         if let Some(t) = self.comments {
             params.push(("comments", t));
         }
+        if let Some(t) = self.start_date {
+            params.push(("start_date", t));
+        }
+        if let Some(t) = self.finish_date {
+            params.push(("finish_date", t));
+        }
 
         params
     }
@@ -170,6 +184,8 @@ pub struct StatusBuilder {
     rewatch_value: Option<u8>,
     tags: Option<Vec<String>>,
     comments: Option<String>,
+    start_date: Option<String>,
+    finish_date: Option<String>,
 }
 
 impl Default for StatusBuilder {
@@ -190,6 +206,8 @@ impl StatusBuilder {
             rewatch_value: None,
             tags: None,
             comments: None,
+            start_date: None,
+            finish_date: None,
         }
     }
 
@@ -238,6 +256,16 @@ impl StatusBuilder {
         self
     }
 
+    pub fn start_date(mut self, start_date: impl Into<Option<String>>) -> Self {
+        self.start_date = start_date.into();
+        self
+    }
+
+    pub fn finish_date(mut self, finish_date: impl Into<Option<String>>) -> Self {
+        self.finish_date = finish_date.into();
+        self
+    }
+
     pub fn build(self) -> StatusUpdate {
         StatusUpdate {
             status: self.status,
@@ -249,6 +277,8 @@ impl StatusBuilder {
             rewatch_value: self.rewatch_value,
             tags: self.tags,
             comments: self.comments,
+            start_date: self.start_date,
+            finish_date: self.finish_date,
         }
     }
 }
