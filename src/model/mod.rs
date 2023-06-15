@@ -33,6 +33,8 @@ pub struct ListStatus {
     pub rewatch_value: Option<u32>,
     pub tags: Option<Vec<String>>,
     pub comments: Option<String>,
+    pub start_date: Option<String>,
+    pub finish_date: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
