@@ -130,3 +130,23 @@ pub struct ForumTopics {
     pub data: Vec<HashMap<String, Value>>,
     pub paging: Vec<HashMap<String, Value>>,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EpisodesList {
+    pub data: Vec<EpisodeNode>,
+    paging: HashMap<String, Value>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EpisodeNode {
+    pub mal_id: Option<u32>,
+    pub url: Option<String>,
+    pub title: Option<String>,
+    pub title_japanese: Option<String>,
+    pub title_romanji: Option<String>,
+    pub duration: Option<u32>,
+    pub aired: Option<String>,
+    pub filler: Option<bool>,
+    pub recap: Option<bool>,
+    pub forum_url: Option<String>,
+}

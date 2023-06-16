@@ -1,7 +1,7 @@
 use crate::model::{
     fields::AnimeFields,
     options::{Params, RankingType, Season, StatusUpdate},
-    AnimeDetails, AnimeList, ForumBoards, ForumTopics, ListStatus, TopicDetails, User,
+    AnimeDetails, AnimeList, EpisodesList, ForumBoards, ForumTopics, ListStatus, TopicDetails, User,
 };
 use rand::random;
 use reqwest::Client;
@@ -627,6 +627,15 @@ impl MALClient {
         let url = "https://api.myanimelist.net/v2/users/@me?fields=anime_statistics";
         let res = self.do_request(url.to_owned()).await?;
         self.parse_response(&res)
+    }
+
+    pub async fn get_anime_episodes(&self, id: u32) -> Result<EpisodesList, MALError> {
+        let url = format!(
+            "https://api.jikan.moe/v4/anime/{}/episodes?page=1", // add support for more pages
+            id,
+        );
+        let res = self.do_request(url).await?;
+        Ok(serde_json::from_str(&res).unwrap())
     }
 }
 
