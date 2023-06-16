@@ -134,7 +134,7 @@ pub struct ForumTopics {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EpisodesList {
     pub data: Vec<EpisodeNode>,
-    paging: HashMap<String, Value>,
+    pagination: HashMap<String, Value>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
