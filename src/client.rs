@@ -635,7 +635,14 @@ impl MALClient {
             id,
         );
         let res = self.do_request(url).await?;
-        Ok(serde_json::from_str(&res).unwrap())
+        match serde_json::from_str(&res) {
+            Ok(list) => Ok(list),
+            Err(e) => Err(MALError::new(
+                "unable to get anime episodes",
+                &format!("{}", e),
+                res.to_string(),
+            )),
+        }
     }
 }
 
