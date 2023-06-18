@@ -3,7 +3,6 @@ use crate::model::{
     options::{Params, RankingType, Season, StatusUpdate},
     AnimeDetails, AnimeList, EpisodesList, ForumBoards, ForumTopics, ListStatus, TopicDetails, User,
 };
-use rand::random;
 use reqwest::Client;
 use reqwest::{Method, StatusCode};
 use serde::{Deserialize, Serialize};
@@ -112,8 +111,8 @@ impl MALClient {
     pub fn get_auth_parts(&self) -> (String, String, String) {
         let verifier = pkce::code_verifier(128);
         let challenge = pkce::code_challenge(&verifier);
-        let state = format!("bruh{}", random::<u8>());
-        let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}&state={}", self.client_secret, challenge, state, );
+        let state = format!("");
+        let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}", self.client_secret, challenge);
         (url, challenge, state)
     }
 
