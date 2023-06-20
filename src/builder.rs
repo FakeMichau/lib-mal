@@ -13,6 +13,7 @@ use crate::{MALClient, MALError};
 ///     let client = ClientBuilder::new().secret("[YOUR_CLIENT_ID]".to_string()).access_token("exampleExAmPlE".to_string()).build_no_refresh();
 ///  }
 ///```
+#[allow(clippy::module_name_repetitions)]
 pub struct ClientBuilder {
     client_secret: Option<String>,
     dirs: Option<PathBuf>,
@@ -20,11 +21,10 @@ pub struct ClientBuilder {
     caching: bool,
 }
 
-#[allow(clippy::new_without_default)]
 impl ClientBuilder {
-    ///Creates a new ClientBuilder. All fields are set to None by default.
-    pub fn new() -> Self {
-        ClientBuilder {
+    ///Creates a new `ClientBuilder`. All fields are set to None by default.
+    pub const fn new() -> Self {
+        Self {
             client_secret: None,
             dirs: None,
             access_token: None,
@@ -32,7 +32,7 @@ impl ClientBuilder {
         }
     }
 
-    /// Sets the client_secret
+    /// Sets the `client_secret`
     /// # Example
     ///
     ///```
@@ -90,7 +90,7 @@ impl ClientBuilder {
     /// # }
     ///
     /// ```
-    pub fn caching(mut self, caching: bool) -> Self {
+    pub const fn caching(mut self, caching: bool) -> Self {
         self.caching = caching;
         self
     }
@@ -136,19 +136,17 @@ impl ClientBuilder {
         let mut will_cache = self.caching;
         let mut n_a = false;
 
-        let dir = if let Some(d) = self.dirs {
-            d
-        } else {
+        let dir = self.dirs.map_or_else(|| {
             will_cache = false;
             PathBuf::new()
-        };
+        }, |d| d);
 
         let mut token = String::new();
         if will_cache && dir.join("tokens").exists() {
             if let Ok(tokens) = fs::read(dir.join("tokens")) {
                 let mut tok: Tokens = decrypt_tokens(&tokens).unwrap();
                 if let Ok(n) = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-                    if n.as_secs() - tok.today >= tok.expires_in as u64 {
+                    if n.as_secs() - tok.today >= u64::from(tok.expires_in) {
                         let params = [
                             ("grant_type", "refresh_token"),
                             ("refesh_token", &tok.refresh_token),
@@ -187,7 +185,7 @@ impl ClientBuilder {
                                 .as_secs(),
                         };
 
-                        if let Err(e) = fs::write(dir.join("tokens"), encrypt_token(tok)) {
+                        if let Err(e) = fs::write(dir.join("tokens"), encrypt_token(&tok)) {
                             return Err(MALError::new(
                                 "Unable to write tokens to cache",
                                 e.to_string().as_str(),

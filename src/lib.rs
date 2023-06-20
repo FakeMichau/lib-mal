@@ -68,7 +68,7 @@ impl Error for MALError {}
 
 impl MALError {
     pub fn new(msg: &str, error: &str, info: impl Into<Option<String>>) -> Self {
-        MALError {
+        Self {
             error: error.to_owned(),
             message: Some(msg.to_owned()),
             info: info.into(),

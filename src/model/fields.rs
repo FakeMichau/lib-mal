@@ -97,7 +97,7 @@ macro_rules! bits {
     ($($fn_name:ident => $bit_name:ident),* $(,)?) => {
         impl AnimeFields {
             $(
-                pub fn $fn_name(self) -> bool {
+                pub const fn $fn_name(self) -> bool {
                     self.contains(Self::$bit_name)
                 }
             )*

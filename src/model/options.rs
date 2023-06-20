@@ -26,7 +26,7 @@ impl Display for RankingType {
             Self::OVA => "ova".to_owned(),
             Self::All => "all".to_owned(),
         };
-        write!(f, "{}", me)
+        write!(f, "{me}")
     }
 }
 
@@ -46,11 +46,11 @@ impl Display for Season {
             Self::Summer => "summer".to_owned(),
             Self::Fall => "fall".to_owned(),
         };
-        write!(f, "{}", me)
+        write!(f, "{me}")
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Status {
     Watching,
     Completed,
@@ -68,7 +68,7 @@ impl Display for Status {
             Self::Dropped => "dropped".to_owned(),
             Self::PlanToWatch => "plan_to_watch".to_owned(),
         };
-        write!(f, "{}", me)
+        write!(f, "{me}")
     }
 }
 
@@ -92,7 +92,7 @@ pub struct StatusUpdate {
 }
 
 impl StatusUpdate {
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self::default()
     }
 
@@ -195,8 +195,8 @@ impl Default for StatusBuilder {
 }
 
 impl StatusBuilder {
-    pub fn new() -> Self {
-        StatusBuilder {
+    pub const fn new() -> Self {
+        Self {
             status: None,
             is_rewatching: None,
             score: None,
@@ -266,8 +266,9 @@ impl StatusBuilder {
         self
     }
 
-    pub fn build(self) -> StatusUpdate {
-        StatusUpdate {
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn build(self) -> Self {
+        Self {
             status: self.status,
             is_rewatching: self.is_rewatching,
             score: self.score,
