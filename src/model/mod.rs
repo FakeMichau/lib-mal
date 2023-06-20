@@ -1,12 +1,10 @@
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::collections::HashMap;
-
 #[allow(non_upper_case_globals)]
 pub mod fields;
 pub mod options;
-
 pub use options::StatusBuilder;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AnimeList {
@@ -29,6 +27,7 @@ pub struct ListStatus {
     pub score: Option<u8>,
     pub updated_at: Option<String>,
     pub is_rewatching: Option<bool>,
+    pub num_times_rewatched: Option<u32>,
     pub priority: Option<u32>,
     pub rewatch_value: Option<u32>,
     pub tags: Option<Vec<String>>,
