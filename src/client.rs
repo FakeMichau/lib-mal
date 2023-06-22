@@ -170,7 +170,7 @@ impl MALClient {
             i.respond(response).unwrap();
             break;
         }
-
+        self.need_auth = false;
         self.get_tokens(&code, challenge).await
     }
 
