@@ -13,7 +13,7 @@ use tiny_http::{Response, Server};
 
 use crate::MALError;
 
-use aes_gcm::aead::{Aead, NewAead};
+use aes_gcm::{aead::Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 
 ///Exposes all of the API functions for the [MyAnimeList API](https://myanimelist.net/apiconfig/references/api/v2)
@@ -647,7 +647,7 @@ pub struct Tokens {
 }
 
 pub fn encrypt_token(toks: &Tokens) -> Vec<u8> {
-    let key = Key::from_slice(b"one two three four five six seve");
+    let key = Key::<Aes256Gcm>::from_slice(b"one two three four five six seve");
     let cypher = Aes256Gcm::new(key);
     let nonce = Nonce::from_slice(b"but the eart");
     let plain = serde_json::to_vec(&toks).unwrap();
@@ -656,7 +656,7 @@ pub fn encrypt_token(toks: &Tokens) -> Vec<u8> {
 }
 
 pub fn decrypt_tokens(raw: &[u8]) -> Result<Tokens, MALError> {
-    let key = Key::from_slice(b"one two three four five six seve");
+    let key = Key::<Aes256Gcm>::from_slice(b"one two three four five six seve");
     let cypher = Aes256Gcm::new(key);
     let nonce = Nonce::from_slice(b"but the eart");
     match cypher.decrypt(nonce, raw.as_ref()) {
