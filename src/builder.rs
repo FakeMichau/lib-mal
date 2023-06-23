@@ -106,8 +106,8 @@ impl ClientBuilder {
     ///     let client =
     ///     ClientBuilder::new().secret("[YOUR_CLIENT_ID]".to_string()).caching(true).cache_dir(PathBuf::new()).build_no_refresh();
     /// }
-    pub fn build_no_refresh(self) -> MALClient {
-        MALClient::new(
+    pub fn build_no_refresh<T: MALClientTrait + Send + Sync>(self) -> T {
+        T::new(
             self.client_secret.unwrap_or_default(),
             self.dirs.unwrap_or_default(),
             self.access_token.unwrap_or_default(),
@@ -131,7 +131,7 @@ impl ClientBuilder {
     ///
     ///     Ok(())
     /// }
-    pub async fn build_with_refresh(self) -> Result<MALClient, MALError> {
+    pub async fn build_with_refresh<T: MALClientTrait + Send + Sync>(self) -> Result<T, MALError> {
         let client = reqwest::Client::new();
         let mut will_cache = self.caching;
         let mut n_a = false;
@@ -202,7 +202,7 @@ impl ClientBuilder {
             n_a = true;
         }
 
-        Ok(MALClient::new(
+        Ok(T::new(
             self.client_secret.unwrap_or_default(),
             dir,
             token,

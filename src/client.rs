@@ -119,6 +119,7 @@ pub trait MALClientTrait {
     ) -> Result<ForumTopics, MALError>;
     async fn get_my_user_info(&self) -> Result<User, MALError>;
     async fn get_anime_episodes(&self, id: u32) -> Result<EpisodesList, MALError>;
+    fn need_auth(&self) -> bool;
 }
 
 #[async_trait]
@@ -604,6 +605,10 @@ impl MALClientTrait for MALClient {
                 res.to_string(),
             )),
         }
+    }
+
+    fn need_auth(&self) -> bool {
+        self.need_auth
     }
 }
 

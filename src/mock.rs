@@ -205,4 +205,7 @@ impl MALClientTrait for MockMALClient {
         };
         Ok(episodes_list)
     }
+    fn need_auth(&self) -> bool {
+        self.need_auth
+    }
 }
