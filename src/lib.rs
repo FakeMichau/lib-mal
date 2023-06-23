@@ -36,6 +36,7 @@ pub mod model;
 
 pub use builder::ClientBuilder;
 pub use client::{MALClient, MALClientTrait};
+pub use mock::MockMALClient;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt::{Debug, Display};
