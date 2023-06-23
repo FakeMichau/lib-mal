@@ -10,6 +10,7 @@ pub struct MockMALClient {
     client: reqwest::Client,
     caching: bool,
     pub need_auth: bool,
+    pub give_error: bool,
 }
 
 #[async_trait]
@@ -22,7 +23,7 @@ impl MALClientTrait for MockMALClient {
         caching: bool,
         need_auth: bool,
     ) -> Self {
-        Self { client_secret, dirs, access_token, client, caching, need_auth }
+        Self { client_secret, dirs, access_token, client, caching, need_auth, give_error: false }
     }
     fn with_access_token(token: &str) -> Self {
         Self {
@@ -32,6 +33,7 @@ impl MALClientTrait for MockMALClient {
             access_token: token.to_owned(),
             client: reqwest::Client::new(),
             caching: false,
+            give_error: false,
         }
     }
     fn set_cache_dir(&mut self, dir: PathBuf) {
@@ -75,8 +77,11 @@ impl MALClientTrait for MockMALClient {
         id: u32,
         fields: impl Into<Option<AnimeFields>> + Send,
     ) -> Result<AnimeDetails, MALError> {
-        let anime_details = serde_json::from_str::<AnimeDetails>(include_str!("test-data/anime_details.json")).unwrap();
-        Ok(anime_details)
+        match id {
+            21 => Ok(serde_json::from_str::<AnimeDetails>(include_str!("test-data/one_piece_details.json")).unwrap()),
+            30230 => Ok(serde_json::from_str::<AnimeDetails>(include_str!("test-data/anime_details.json")).unwrap()),
+            _ => Err(MALError::new("Not found", "error", Some(String::from("info")))),
+        }
     }
     /// answers for get_anime_ranking(RankingType::All, Some(4))
     async fn get_anime_ranking(
