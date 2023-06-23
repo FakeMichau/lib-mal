@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::time::SystemTime;
 
 use crate::client::{decrypt_tokens, encrypt_token, TokenResponse, Tokens};
-use crate::{MALClient, MALError};
+use crate::{MALClient, MALError, MALClientTrait};
 
 ///# Example
 ///```

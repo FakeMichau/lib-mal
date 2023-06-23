@@ -3,6 +3,7 @@ use crate::model::{
     options::{Params, RankingType, Season, StatusUpdate},
     AnimeDetails, AnimeList, EpisodesList, ForumBoards, ForumTopics, ListStatus, TopicDetails, User,
 };
+use async_trait::async_trait;
 use reqwest::Client;
 use reqwest::{Method, StatusCode};
 use serde::{Deserialize, Serialize};
@@ -48,8 +49,81 @@ pub struct MALClient {
     pub need_auth: bool,
 }
 
-impl MALClient {
-    pub const fn new(
+#[async_trait]
+pub trait MALClientTrait {
+    fn new(
+        client_secret: String,
+        dirs: PathBuf,
+        access_token: String,
+        client: Client,
+        caching: bool,
+        need_auth: bool,
+    ) -> Self;
+    fn with_access_token(token: &str) -> Self;
+    fn set_cache_dir(&mut self, dir: PathBuf);
+    fn set_caching(&mut self, caching: bool);
+    fn get_auth_parts(&self) -> (String, String, String);
+    async fn auth(
+        &mut self,
+        callback_url: &str,
+        challenge: &str,
+        state: &str,
+    ) -> Result<(), MALError>;
+    fn get_access_token(&self) -> &str;
+    async fn get_anime_list(
+        &self,
+        query: &str,
+        limit: impl Into<Option<u8>> + Send,
+    ) -> Result<AnimeList, MALError>;
+    async fn get_anime_details(
+        &self,
+        id: u32,
+        fields: impl Into<Option<AnimeFields>> + Send,
+    ) -> Result<AnimeDetails, MALError>;
+    async fn get_anime_ranking(
+        &self,
+        ranking_type: RankingType,
+        limit: impl Into<Option<u8>> + Send,
+    ) -> Result<AnimeList, MALError>;
+    async fn get_seasonal_anime(
+        &self,
+        season: Season,
+        year: u32,
+        limit: impl Into<Option<u8>> + Send,
+    ) -> Result<AnimeList, MALError>;
+    async fn get_suggested_anime(
+        &self,
+        limit: impl Into<Option<u8>> + Send,
+    ) -> Result<AnimeList, MALError>;
+    async fn update_user_anime_status(
+        &self,
+        id: u32,
+        update: StatusUpdate,
+    ) -> Result<ListStatus, MALError>;
+    async fn get_user_anime_list(&self) -> Result<AnimeList, MALError>;
+    async fn delete_anime_list_item(&self, id: u32) -> Result<(), MALError>;
+    async fn get_forum_boards(&self) -> Result<ForumBoards, MALError>;
+    async fn get_forum_topic_detail(
+        &self,
+        topic_id: u32,
+        limit: impl Into<Option<u8>> + Send,
+    ) -> Result<TopicDetails, MALError>;
+    async fn get_forum_topics(
+        &self,
+        board_id: impl Into<Option<u32>> + Send,
+        subboard_id: impl Into<Option<u32>> + Send,
+        query: impl Into<Option<String>> + Send,
+        topic_user_name: impl Into<Option<String>> + Send,
+        user_name: impl Into<Option<String>> + Send,
+        limit: impl Into<Option<u32>> + Send,
+    ) -> Result<ForumTopics, MALError>;
+    async fn get_my_user_info(&self) -> Result<User, MALError>;
+    async fn get_anime_episodes(&self, id: u32) -> Result<EpisodesList, MALError>;
+}
+
+#[async_trait]
+impl MALClientTrait for MALClient {
+    fn new(
         client_secret: String,
         dirs: PathBuf,
         access_token: String,
@@ -59,12 +133,11 @@ impl MALClient {
     ) -> Self {
         Self { client_secret, dirs, access_token, client, caching, need_auth }
     }
-
     ///Creates a client using provided token. Caching is disable by default.
     ///
     ///A client created this way can't authenticate the user if needed because it lacks a
     ///`client_secret`
-    pub fn with_access_token(token: &str) -> Self {
+    fn with_access_token(token: &str) -> Self {
         Self {
             client_secret: String::new(),
             need_auth: false,
@@ -76,19 +149,19 @@ impl MALClient {
     }
 
     ///Sets the directory the client will use for the token cache
-    pub fn set_cache_dir(&mut self, dir: PathBuf) {
+    fn set_cache_dir(&mut self, dir: PathBuf) {
         self.dirs = dir;
     }
 
     ///Sets wether the client will cache or not
-    pub fn set_caching(&mut self, caching: bool) {
+    fn set_caching(&mut self, caching: bool) {
         self.caching = caching;
     }
 
     ///Returns the auth URL and code challenge which will be needed to authorize the user.
     ///
     ///# Example
-    ///
+    ///#[async_trait]
     ///```no_run
     ///     use lib_mal::ClientBuilder;
     ///     # use  lib_mal::MALError;
@@ -102,7 +175,7 @@ impl MALClient {
     ///     # Ok(())
     ///     # }
     ///```
-    pub fn get_auth_parts(&self) -> (String, String, String) {
+    fn get_auth_parts(&self) -> (String, String, String) {
         let verifier = pkce::code_verifier(128);
         let challenge = pkce::code_challenge(&verifier);
         let state = String::new();
@@ -134,7 +207,7 @@ impl MALClient {
     ///     # }
     ///
     ///```
-    pub async fn auth(
+    async fn auth(
         &mut self,
         callback_url: &str,
         challenge: &str,
@@ -173,7 +246,368 @@ impl MALClient {
         self.need_auth = false;
         self.get_tokens(&code, challenge).await
     }
+    ///Returns the current access token. Intended mostly for debugging.
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::ClientBuilder;
+    /// # use lib_mal::MALError;
+    /// # use std::path::PathBuf;
+    /// # async fn test() -> Result<(), MALError> {
+    ///     let client = ClientBuilder::new().secret("[YOUR_SECRET_HERE]".to_string()).caching(true).cache_dir(Some(PathBuf::new())).build_with_refresh().await?;
+    ///     let token = client.get_access_token();
+    ///     Ok(())
+    /// # }
+    ///```
+    fn get_access_token(&self) -> &str {
+        &self.access_token
+    }
 
+    //Begin API functions
+
+    //--Anime functions--//
+    ///Gets a list of anime based on the query string provided
+    ///`limit` defaults to 100 if `None`
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::MALClient;
+    /// # use lib_mal::MALError;
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
+    ///     let list = client.get_anime_list("Mobile Suit Gundam", None).await?;
+    ///     # Ok(())
+    /// # }
+    ///```
+    async fn get_anime_list(
+        &self,
+        query: &str,
+        limit: impl Into<Option<u8>> + Send,
+    ) -> Result<AnimeList, MALError> {
+        let url = format!(
+            "https://api.myanimelist.net/v2/anime?q={}&limit={}",
+            query,
+            limit.into().unwrap_or(100)
+        );
+        let res = self.do_request(url).await?;
+        Self::parse_response(&res)
+    }
+
+    ///Gets the details for an anime by the show's ID.
+    ///Only returns the fields specified in the `fields` parameter
+    ///
+    ///Returns all fields when supplied `None`
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// use lib_mal::model::fields::AnimeFields;
+    /// # use lib_mal::{MALError, MALClient};
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
+    /// //returns an AnimeDetails struct with just the Rank, Mean, and Studio data for Mobile Suit Gundam
+    /// let res = client.get_anime_details(80, AnimeFields::Rank | AnimeFields::Mean | AnimeFields::Studios).await?;
+    /// # Ok(())
+    /// # }
+    ///
+    ///```
+    ///
+    async fn get_anime_details(
+        &self,
+        id: u32,
+        fields: impl Into<Option<AnimeFields>> + Send,
+    ) -> Result<AnimeDetails, MALError> {
+        let url = fields.into().map_or_else(|| format!(
+                "https://api.myanimelist.net/v2/anime/{}?fields={}",
+                id,
+                AnimeFields::ALL
+            ), |f| format!("https://api.myanimelist.net/v2/anime/{id}?fields={f}"));
+        let res = self.do_request(url).await?;
+        Self::parse_response(&res)
+    }
+
+    ///Gets a list of anime ranked by `RankingType`
+    ///
+    ///`limit` defaults to the max of 100 when `None`
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALError, MALClient};
+    /// use lib_mal::model::options::RankingType;
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
+    /// // Gets a list of the top 5 most popular anime
+    /// let ranking_list = client.get_anime_ranking(RankingType::ByPopularity, 5).await?;
+    /// # Ok(())
+    /// # }
+    ///
+    ///```
+    async fn get_anime_ranking(
+        &self,
+        ranking_type: RankingType,
+        limit: impl Into<Option<u8>> + Send,
+    ) -> Result<AnimeList, MALError> {
+        let url = format!(
+            "https://api.myanimelist.net/v2/anime/ranking?ranking_type={}&limit={}",
+            ranking_type,
+            limit.into().unwrap_or(100)
+        );
+        let res = self.do_request(url).await?;
+        Ok(serde_json::from_str(&res).unwrap())
+    }
+
+    ///Gets the anime for a given season in a given year
+    ///
+    ///`limit` defaults to the max of 100 when `None`
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALClient, MALError};
+    /// use lib_mal::model::options::Season;
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
+    ///     let summer_2019 = client.get_seasonal_anime(Season::Summer, 2019, None).await?;
+    ///     # Ok(())
+    /// # }
+    ///```
+    async fn get_seasonal_anime(
+        &self,
+        season: Season,
+        year: u32,
+        limit: impl Into<Option<u8>> + Send,
+    ) -> Result<AnimeList, MALError> {
+        let url = format!(
+            "https://api.myanimelist.net/v2/anime/season/{}/{}?limit={}",
+            year,
+            season,
+            limit.into().unwrap_or(100)
+        );
+        let res = self.do_request(url).await?;
+        Self::parse_response(&res)
+    }
+
+    ///Returns the suggested anime for the current user. Can return an empty list if the user has
+    ///no suggestions.
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALClient, MALError};
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
+    ///     let suggestions = client.get_suggested_anime(10).await?;
+    ///     # Ok(())
+    /// # }
+    ///```
+    async fn get_suggested_anime(
+        &self,
+        limit: impl Into<Option<u8>> + Send,
+    ) -> Result<AnimeList, MALError> {
+        let url = format!(
+            "https://api.myanimelist.net/v2/anime/suggestions?limit={}",
+            limit.into().unwrap_or(100)
+        );
+        let res = self.do_request(url).await?;
+        Self::parse_response(&res)
+    }
+
+    //--User anime list functions--//
+
+    ///Adds an anime to the list, or updates the element if it already exists
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALClient, MALError};
+    /// use lib_mal::model::StatusBuilder;
+    /// use lib_mal::model::options::Status;
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
+    ///     // add a new anime to the user's list
+    ///     let updated_status = client.update_user_anime_status(80, StatusBuilder::new().status(Status::Watching).build()).await?;
+    ///     // or update an existing one
+    ///     let new_status = StatusBuilder::new().status(Status::Dropped).num_watched_episodes(2).build();
+    ///     let updated_status = client.update_user_anime_status(32981, new_status).await?;
+    ///
+    ///     # Ok(())
+    ///
+    /// # }
+    ///```
+    async fn update_user_anime_status(
+        &self,
+        id: u32,
+        update: StatusUpdate,
+    ) -> Result<ListStatus, MALError> {
+        let params = update.get_params();
+        let url = format!("https://api.myanimelist.net/v2/anime/{id}/my_list_status");
+        let res = self.do_request_forms(url, params).await?;
+        Self::parse_response(&res)
+    }
+
+    ///Returns the user's full anime list as an `AnimeList` struct.
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALClient, MALError};
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
+    ///     let my_list = client.get_user_anime_list().await?;
+    ///     # Ok(())
+    ///
+    /// # }
+    ///```
+    async fn get_user_anime_list(&self) -> Result<AnimeList, MALError> {
+        let url = "https://api.myanimelist.net/v2/users/@me/animelist?fields=list_status&limit=4";
+        let res = self.do_request(url.to_owned()).await?;
+
+        Self::parse_response(&res)
+    }
+
+    ///Deletes the anime with `id` from the user's anime list
+    ///
+    ///# Note
+    /// The [API docs from MAL](https://myanimelist.net/apiconfig/references/api/v2#operation/anime_anime_id_my_list_status_delete) say this method should return 404 if the anime isn't in the user's
+    /// list, but in my testing this wasn't true. Without that there's no way to tell if the item
+    /// was actually deleted or not.
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALClient, MALError};
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
+    ///     client.delete_anime_list_item(80).await?;
+    ///     # Ok(())
+    /// # }
+    ///```
+    async fn delete_anime_list_item(&self, id: u32) -> Result<(), MALError> {
+        let url = format!("https://api.myanimelist.net/v2/anime/{id}/my_list_status");
+        let res = self
+            .client
+            .delete(url)
+            .bearer_auth(&self.access_token)
+            .send()
+            .await;
+        match res {
+            Ok(r) => {
+                if r.status() == StatusCode::NOT_FOUND {
+                    Err(MALError::new(
+                        &format!("Anime {id} not found"),
+                        r.status().as_str(),
+                        None,
+                    ))
+                } else {
+                    Ok(())
+                }
+            }
+            Err(e) => Err(MALError::new(
+                "Unable to send request",
+                &format!("{e}"),
+                None,
+            )),
+        }
+    }
+
+    //--Forum functions--//
+
+    ///Returns a vector of `HashMap`s that represent all the forum boards on MAL
+    async fn get_forum_boards(&self) -> Result<ForumBoards, MALError> {
+        let res = self
+            .do_request("https://api.myanimelist.net/v2/forum/boards".to_owned())
+            .await?;
+        Self::parse_response(&res)
+    }
+
+    ///Returns details of the specified topic
+    async fn get_forum_topic_detail(
+        &self,
+        topic_id: u32,
+        limit: impl Into<Option<u8>> + Send,
+    ) -> Result<TopicDetails, MALError> {
+        let url = format!(
+            "https://api.myanimelist.net/v2/forum/topic/{}?limit={}",
+            topic_id,
+            limit.into().unwrap_or(100)
+        );
+        let res = self.do_request(url).await?;
+        Self::parse_response(&res)
+    }
+
+    ///Returns all topics for a given query
+    async fn get_forum_topics(
+        &self,
+        board_id: impl Into<Option<u32>> + Send,
+        subboard_id: impl Into<Option<u32>> + Send,
+        query: impl Into<Option<String>> + Send,
+        topic_user_name: impl Into<Option<String>> + Send,
+        user_name: impl Into<Option<String>> + Send,
+        limit: impl Into<Option<u32>> + Send,
+    ) -> Result<ForumTopics, MALError> {
+        let params = {
+            let mut tmp = vec![];
+            if let Some(bid) = board_id.into() {
+                tmp.push(format!("board_id={bid}"));
+            }
+            if let Some(bid) = subboard_id.into() {
+                tmp.push(format!("subboard_id={bid}"));
+            }
+            if let Some(bid) = query.into() {
+                tmp.push(format!("q={bid}"));
+            }
+            if let Some(bid) = topic_user_name.into() {
+                tmp.push(format!("topic_user_name={bid}"));
+            }
+            if let Some(bid) = user_name.into() {
+                tmp.push(format!("user_name={bid}"));
+            }
+            tmp.push(format!("limit={}", limit.into().unwrap_or(100)));
+            tmp.join(",")
+        };
+        let url = format!("https://api.myanimelist.net/v2/forum/topics?{params}");
+        let res = self.do_request(url).await?;
+        Self::parse_response(&res)
+    }
+
+    ///Gets the details for the current user
+    ///
+    ///# Example
+    ///
+    ///```no_run
+    /// # use lib_mal::{MALClient, MALError};
+    /// # async fn test() -> Result<(), MALError> {
+    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
+    ///     let me = client.get_my_user_info().await?;
+    ///     # Ok(())
+    /// # }
+    ///```
+    async fn get_my_user_info(&self) -> Result<User, MALError> {
+        let url = "https://api.myanimelist.net/v2/users/@me?fields=anime_statistics";
+        let res = self.do_request(url.to_owned()).await?;
+        Self::parse_response(&res)
+    }
+
+    async fn get_anime_episodes(&self, id: u32) -> Result<EpisodesList, MALError> {
+        let url = format!(
+            "https://api.jikan.moe/v4/anime/{id}/episodes?page=1",
+        );
+        let res = self.do_request(url).await?;
+        match serde_json::from_str(&res) {
+            Ok(list) => Ok(list),
+            Err(e) => Err(MALError::new(
+                "unable to get anime episodes",
+                &format!("{e}"),
+                res.to_string(),
+            )),
+        }
+    }
+}
+
+impl MALClient {
     async fn get_tokens(&mut self, code: &str, verifier: &str) -> Result<(), MALError> {
         let params = [
             ("client_id", self.client_secret.as_str()),
@@ -267,366 +701,6 @@ impl MALClient {
                     res.to_string(),
                 ),
             }), |v| Ok(v))
-    }
-
-    ///Returns the current access token. Intended mostly for debugging.
-    ///
-    ///# Example
-    ///
-    ///```no_run
-    /// # use lib_mal::ClientBuilder;
-    /// # use lib_mal::MALError;
-    /// # use std::path::PathBuf;
-    /// # async fn test() -> Result<(), MALError> {
-    ///     let client = ClientBuilder::new().secret("[YOUR_SECRET_HERE]".to_string()).caching(true).cache_dir(Some(PathBuf::new())).build_with_refresh().await?;
-    ///     let token = client.get_access_token();
-    ///     Ok(())
-    /// # }
-    ///```
-    pub fn get_access_token(&self) -> &str {
-        &self.access_token
-    }
-
-    //Begin API functions
-
-    //--Anime functions--//
-    ///Gets a list of anime based on the query string provided
-    ///`limit` defaults to 100 if `None`
-    ///
-    ///# Example
-    ///
-    ///```no_run
-    /// # use lib_mal::MALClient;
-    /// # use lib_mal::MALError;
-    /// # async fn test() -> Result<(), MALError> {
-    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
-    ///     let list = client.get_anime_list("Mobile Suit Gundam", None).await?;
-    ///     # Ok(())
-    /// # }
-    ///```
-    pub async fn get_anime_list(
-        &self,
-        query: &str,
-        limit: impl Into<Option<u8>> + Send,
-    ) -> Result<AnimeList, MALError> {
-        let url = format!(
-            "https://api.myanimelist.net/v2/anime?q={}&limit={}",
-            query,
-            limit.into().unwrap_or(100)
-        );
-        let res = self.do_request(url).await?;
-        Self::parse_response(&res)
-    }
-
-    ///Gets the details for an anime by the show's ID.
-    ///Only returns the fields specified in the `fields` parameter
-    ///
-    ///Returns all fields when supplied `None`
-    ///
-    ///# Example
-    ///
-    ///```no_run
-    /// use lib_mal::model::fields::AnimeFields;
-    /// # use lib_mal::{MALError, MALClient};
-    /// # async fn test() -> Result<(), MALError> {
-    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
-    /// //returns an AnimeDetails struct with just the Rank, Mean, and Studio data for Mobile Suit Gundam
-    /// let res = client.get_anime_details(80, AnimeFields::Rank | AnimeFields::Mean | AnimeFields::Studios).await?;
-    /// # Ok(())
-    /// # }
-    ///
-    ///```
-    ///
-    pub async fn get_anime_details(
-        &self,
-        id: u32,
-        fields: impl Into<Option<AnimeFields>> + Send,
-    ) -> Result<AnimeDetails, MALError> {
-        let url = fields.into().map_or_else(|| format!(
-                "https://api.myanimelist.net/v2/anime/{}?fields={}",
-                id,
-                AnimeFields::ALL
-            ), |f| format!("https://api.myanimelist.net/v2/anime/{id}?fields={f}"));
-        let res = self.do_request(url).await?;
-        Self::parse_response(&res)
-    }
-
-    ///Gets a list of anime ranked by `RankingType`
-    ///
-    ///`limit` defaults to the max of 100 when `None`
-    ///
-    ///# Example
-    ///
-    ///```no_run
-    /// # use lib_mal::{MALError, MALClient};
-    /// use lib_mal::model::options::RankingType;
-    /// # async fn test() -> Result<(), MALError> {
-    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
-    /// // Gets a list of the top 5 most popular anime
-    /// let ranking_list = client.get_anime_ranking(RankingType::ByPopularity, 5).await?;
-    /// # Ok(())
-    /// # }
-    ///
-    ///```
-    pub async fn get_anime_ranking(
-        &self,
-        ranking_type: RankingType,
-        limit: impl Into<Option<u8>> + Send,
-    ) -> Result<AnimeList, MALError> {
-        let url = format!(
-            "https://api.myanimelist.net/v2/anime/ranking?ranking_type={}&limit={}",
-            ranking_type,
-            limit.into().unwrap_or(100)
-        );
-        let res = self.do_request(url).await?;
-        Ok(serde_json::from_str(&res).unwrap())
-    }
-
-    ///Gets the anime for a given season in a given year
-    ///
-    ///`limit` defaults to the max of 100 when `None`
-    ///
-    ///# Example
-    ///
-    ///```no_run
-    /// # use lib_mal::{MALClient, MALError};
-    /// use lib_mal::model::options::Season;
-    /// # async fn test() -> Result<(), MALError> {
-    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
-    ///     let summer_2019 = client.get_seasonal_anime(Season::Summer, 2019, None).await?;
-    ///     # Ok(())
-    /// # }
-    ///```
-    pub async fn get_seasonal_anime(
-        &self,
-        season: Season,
-        year: u32,
-        limit: impl Into<Option<u8>> + Send,
-    ) -> Result<AnimeList, MALError> {
-        let url = format!(
-            "https://api.myanimelist.net/v2/anime/season/{}/{}?limit={}",
-            year,
-            season,
-            limit.into().unwrap_or(100)
-        );
-        let res = self.do_request(url).await?;
-        Self::parse_response(&res)
-    }
-
-    ///Returns the suggested anime for the current user. Can return an empty list if the user has
-    ///no suggestions.
-    ///
-    ///# Example
-    ///
-    ///```no_run
-    /// # use lib_mal::{MALClient, MALError};
-    /// # async fn test() -> Result<(), MALError> {
-    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
-    ///     let suggestions = client.get_suggested_anime(10).await?;
-    ///     # Ok(())
-    /// # }
-    ///```
-    pub async fn get_suggested_anime(
-        &self,
-        limit: impl Into<Option<u8>> + Send,
-    ) -> Result<AnimeList, MALError> {
-        let url = format!(
-            "https://api.myanimelist.net/v2/anime/suggestions?limit={}",
-            limit.into().unwrap_or(100)
-        );
-        let res = self.do_request(url).await?;
-        Self::parse_response(&res)
-    }
-
-    //--User anime list functions--//
-
-    ///Adds an anime to the list, or updates the element if it already exists
-    ///
-    ///# Example
-    ///
-    ///```no_run
-    /// # use lib_mal::{MALClient, MALError};
-    /// use lib_mal::model::StatusBuilder;
-    /// use lib_mal::model::options::Status;
-    /// # async fn test() -> Result<(), MALError> {
-    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
-    ///     // add a new anime to the user's list
-    ///     let updated_status = client.update_user_anime_status(80, StatusBuilder::new().status(Status::Watching).build()).await?;
-    ///     // or update an existing one
-    ///     let new_status = StatusBuilder::new().status(Status::Dropped).num_watched_episodes(2).build();
-    ///     let updated_status = client.update_user_anime_status(32981, new_status).await?;
-    ///
-    ///     # Ok(())
-    ///
-    /// # }
-    ///```
-    pub async fn update_user_anime_status(
-        &self,
-        id: u32,
-        update: StatusUpdate,
-    ) -> Result<ListStatus, MALError> {
-        let params = update.get_params();
-        let url = format!("https://api.myanimelist.net/v2/anime/{id}/my_list_status");
-        let res = self.do_request_forms(url, params).await?;
-        Self::parse_response(&res)
-    }
-
-    ///Returns the user's full anime list as an `AnimeList` struct.
-    ///
-    ///# Example
-    ///
-    ///```no_run
-    /// # use lib_mal::{MALClient, MALError};
-    /// # async fn test() -> Result<(), MALError> {
-    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
-    ///     let my_list = client.get_user_anime_list().await?;
-    ///     # Ok(())
-    ///
-    /// # }
-    ///```
-    pub async fn get_user_anime_list(&self) -> Result<AnimeList, MALError> {
-        let url = "https://api.myanimelist.net/v2/users/@me/animelist?fields=list_status&limit=4";
-        let res = self.do_request(url.to_owned()).await?;
-
-        Self::parse_response(&res)
-    }
-
-    ///Deletes the anime with `id` from the user's anime list
-    ///
-    ///# Note
-    /// The [API docs from MAL](https://myanimelist.net/apiconfig/references/api/v2#operation/anime_anime_id_my_list_status_delete) say this method should return 404 if the anime isn't in the user's
-    /// list, but in my testing this wasn't true. Without that there's no way to tell if the item
-    /// was actually deleted or not.
-    ///
-    ///# Example
-    ///
-    ///```no_run
-    /// # use lib_mal::{MALClient, MALError};
-    /// # async fn test() -> Result<(), MALError> {
-    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
-    ///     client.delete_anime_list_item(80).await?;
-    ///     # Ok(())
-    /// # }
-    ///```
-    pub async fn delete_anime_list_item(&self, id: u32) -> Result<(), MALError> {
-        let url = format!("https://api.myanimelist.net/v2/anime/{id}/my_list_status");
-        let res = self
-            .client
-            .delete(url)
-            .bearer_auth(&self.access_token)
-            .send()
-            .await;
-        match res {
-            Ok(r) => {
-                if r.status() == StatusCode::NOT_FOUND {
-                    Err(MALError::new(
-                        &format!("Anime {id} not found"),
-                        r.status().as_str(),
-                        None,
-                    ))
-                } else {
-                    Ok(())
-                }
-            }
-            Err(e) => Err(MALError::new(
-                "Unable to send request",
-                &format!("{e}"),
-                None,
-            )),
-        }
-    }
-
-    //--Forum functions--//
-
-    ///Returns a vector of `HashMap`s that represent all the forum boards on MAL
-    pub async fn get_forum_boards(&self) -> Result<ForumBoards, MALError> {
-        let res = self
-            .do_request("https://api.myanimelist.net/v2/forum/boards".to_owned())
-            .await?;
-        Self::parse_response(&res)
-    }
-
-    ///Returns details of the specified topic
-    pub async fn get_forum_topic_detail(
-        &self,
-        topic_id: u32,
-        limit: impl Into<Option<u8>> + Send,
-    ) -> Result<TopicDetails, MALError> {
-        let url = format!(
-            "https://api.myanimelist.net/v2/forum/topic/{}?limit={}",
-            topic_id,
-            limit.into().unwrap_or(100)
-        );
-        let res = self.do_request(url).await?;
-        Self::parse_response(&res)
-    }
-
-    ///Returns all topics for a given query
-    pub async fn get_forum_topics(
-        &self,
-        board_id: impl Into<Option<u32>> + Send,
-        subboard_id: impl Into<Option<u32>> + Send,
-        query: impl Into<Option<String>> + Send,
-        topic_user_name: impl Into<Option<String>> + Send,
-        user_name: impl Into<Option<String>> + Send,
-        limit: impl Into<Option<u32>> + Send,
-    ) -> Result<ForumTopics, MALError> {
-        let params = {
-            let mut tmp = vec![];
-            if let Some(bid) = board_id.into() {
-                tmp.push(format!("board_id={bid}"));
-            }
-            if let Some(bid) = subboard_id.into() {
-                tmp.push(format!("subboard_id={bid}"));
-            }
-            if let Some(bid) = query.into() {
-                tmp.push(format!("q={bid}"));
-            }
-            if let Some(bid) = topic_user_name.into() {
-                tmp.push(format!("topic_user_name={bid}"));
-            }
-            if let Some(bid) = user_name.into() {
-                tmp.push(format!("user_name={bid}"));
-            }
-            tmp.push(format!("limit={}", limit.into().unwrap_or(100)));
-            tmp.join(",")
-        };
-        let url = format!("https://api.myanimelist.net/v2/forum/topics?{params}");
-        let res = self.do_request(url).await?;
-        Self::parse_response(&res)
-    }
-
-    ///Gets the details for the current user
-    ///
-    ///# Example
-    ///
-    ///```no_run
-    /// # use lib_mal::{MALClient, MALError};
-    /// # async fn test() -> Result<(), MALError> {
-    ///     # let client = MALClient::with_access_token("[YOUR_SECRET_HERE]");
-    ///     let me = client.get_my_user_info().await?;
-    ///     # Ok(())
-    /// # }
-    ///```
-    pub async fn get_my_user_info(&self) -> Result<User, MALError> {
-        let url = "https://api.myanimelist.net/v2/users/@me?fields=anime_statistics";
-        let res = self.do_request(url.to_owned()).await?;
-        Self::parse_response(&res)
-    }
-
-    pub async fn get_anime_episodes(&self, id: u32) -> Result<EpisodesList, MALError> {
-        let url = format!(
-            "https://api.jikan.moe/v4/anime/{id}/episodes?page=1",
-        );
-        let res = self.do_request(url).await?;
-        match serde_json::from_str(&res) {
-            Ok(list) => Ok(list),
-            Err(e) => Err(MALError::new(
-                "unable to get anime episodes",
-                &format!("{e}"),
-                res.to_string(),
-            )),
-        }
     }
 }
 

@@ -30,11 +30,12 @@ mod test;
 
 mod builder;
 mod client;
+#[allow(unused_variables)]
+mod mock;
 pub mod model;
 
 pub use builder::ClientBuilder;
-pub use client::MALClient;
-
+pub use client::{MALClient, MALClientTrait};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt::{Debug, Display};

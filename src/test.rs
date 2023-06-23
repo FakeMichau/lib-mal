@@ -3,7 +3,8 @@ use std::env;
 use crate::model::fields::AnimeFields;
 use crate::model::options::{RankingType, Season};
 use crate::model::{AnimeDetails, AnimeList};
-use crate::MALClient;
+use crate::{MALClient, MALClientTrait};
+#[cfg(test)]
 use tokio_test::block_on;
 
 #[test]
