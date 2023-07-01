@@ -136,7 +136,7 @@ pub struct EpisodesList {
     pub pagination: HashMap<String, Value>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct EpisodeNode {
     pub mal_id: Option<u32>,
     pub url: Option<String>,
@@ -145,6 +145,7 @@ pub struct EpisodeNode {
     pub title_romanji: Option<String>,
     pub duration: Option<u32>,
     pub aired: Option<String>,
+    pub score: Option<f32>,
     pub filler: Option<bool>,
     pub recap: Option<bool>,
     pub forum_url: Option<String>,

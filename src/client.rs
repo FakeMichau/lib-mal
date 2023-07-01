@@ -1,8 +1,8 @@
-use crate::model::{
+use crate::{model::{
     fields::AnimeFields,
     options::{Params, RankingType, Season, StatusUpdate},
     AnimeDetails, AnimeList, EpisodesList, ForumBoards, ForumTopics, ListStatus, TopicDetails, User,
-};
+}, prelude::EpisodeNode};
 use rand::random;
 use async_trait::async_trait;
 use reqwest::Client;
@@ -119,7 +119,7 @@ pub trait MALClientTrait {
         limit: impl Into<Option<u32>> + Send,
     ) -> Result<ForumTopics, MALError>;
     async fn get_my_user_info(&self) -> Result<User, MALError>;
-    async fn get_anime_episodes(&self, id: u32) -> Result<EpisodesList, MALError>;
+    async fn get_anime_episodes(&self, id: u32, precise_score: bool) -> Result<EpisodesList, MALError>;
     fn need_auth(&self) -> bool;
 }
 
@@ -593,19 +593,38 @@ impl MALClientTrait for MALClient {
         Self::parse_response(&res)
     }
 
-    async fn get_anime_episodes(&self, id: u32) -> Result<EpisodesList, MALError> {
+    /// Returns just the first page
+    async fn get_anime_episodes(&self, id: u32, precise_score: bool) -> Result<EpisodesList, MALError> {
+        let page: u32 = 1;
         let url = format!(
-            "https://api.jikan.moe/v4/anime/{id}/episodes?page=1",
+            "https://api.jikan.moe/v4/anime/{id}/episodes?page={page}",
         );
         let res = self.do_request(url).await?;
-        match serde_json::from_str(&res) {
+        let mut api: Result<EpisodesList, MALError> = match serde_json::from_str(&res) {
             Ok(list) => Ok(list),
             Err(e) => Err(MALError::new(
                 "unable to get anime episodes",
                 &format!("{e}"),
                 res.to_string(),
             )),
+        };
+        if precise_score {
+            let offset = page.checked_sub(1).unwrap_or_default() * 100;
+            let extra = self.get_raw_episodes_score(id, offset).await?;
+            api.as_mut()
+                .map(|list| {
+                    list.data.iter_mut().for_each(|episode| {
+                        let score = extra
+                            .iter()
+                            .find(|ee| ee.mal_id == episode.mal_id)
+                            .map(|ee| ee.score)
+                            .unwrap_or_default();
+                        episode.score = score;
+                    });
+                })
+                .map_err(|e| e.clone())?;
         }
+        api
     }
 
     fn need_auth(&self) -> bool {
@@ -707,6 +726,58 @@ impl MALClient {
                     res.to_string(),
                 ),
             }), |v| Ok(v))
+    }
+
+    /// Returns just the scores from the first page
+    async fn get_raw_episodes_score(&self, id: u32, offset: u32) -> Result<Vec<EpisodeNode>, MALError> {
+        let url = format!("https://myanimelist.net/anime/{id}/1/episode?offset={offset}");
+        let res = self.do_request(url).await?;
+
+        let mut episodes_range_iter = res
+            .lines()
+            .find(|line| line.contains("Episodes") && line.contains("h2_overwrite"))
+            .unwrap_or_default()
+            .split(">(")
+            .nth(1)
+            .unwrap_or_default()
+            .split(")<")
+            .next()
+            .unwrap_or_default()
+            .split('/')
+            .map(|value| {
+                value.replace(',', "").parse().unwrap_or_default()
+            });
+
+        let present_episodes: i64 = episodes_range_iter.next().unwrap_or_default();
+
+        if present_episodes == 0 {
+            return Ok(Vec::new());
+        }
+
+        let episodes_score: Vec<EpisodeNode> = res
+            .lines()
+            .filter(|line| line.contains("episode-poll") && line.contains("data-raw"))
+            .enumerate()
+            .map(|(i, line)| {
+                let score = line
+                    .split("data-raw=\"")
+                    .nth(1)
+                    .map(|v| v.split('"'))
+                    .and_then(|mut v| v.next())
+                    .map(str::parse::<f32>)
+                    .and_then(Result::ok);
+                (u32::try_from(i).unwrap_or_default() + 1 + offset, score)
+            })
+            .filter(|(_, score)| score.is_some())
+            .map(|(k, score)| {
+                EpisodeNode {
+                    mal_id: Some(k),
+                    score,
+                    ..Default::default()
+                }
+            })
+            .collect();
+        Ok(episodes_score)
     }
 }
 

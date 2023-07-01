@@ -3,11 +3,11 @@ use async_trait::async_trait;
 use reqwest::Client;
 use crate::{MALClientTrait, MALError, prelude::{AnimeList, fields::AnimeFields, AnimeDetails, options::{RankingType, Season, StatusUpdate, Params}, ListStatus, ForumBoards, TopicDetails, ForumTopics, User, EpisodesList}};
 
+#[allow(clippy::module_name_repetitions)]
 pub struct MockMALClient {
     client_secret: String,
     dirs: PathBuf,
     access_token: String,
-    client: reqwest::Client,
     caching: bool,
     pub need_auth: bool,
     pub give_error: bool,
@@ -23,7 +23,7 @@ impl MALClientTrait for MockMALClient {
         caching: bool,
         need_auth: bool,
     ) -> Self {
-        Self { client_secret, dirs, access_token, client, caching, need_auth, give_error: false }
+        Self { client_secret, dirs, access_token, caching, need_auth, give_error: false }
     }
     fn with_access_token(token: &str) -> Self {
         Self {
@@ -31,7 +31,6 @@ impl MALClientTrait for MockMALClient {
             need_auth: false,
             dirs: PathBuf::new(),
             access_token: token.to_owned(),
-            client: reqwest::Client::new(),
             caching: false,
             give_error: false,
         }
@@ -203,7 +202,7 @@ impl MALClientTrait for MockMALClient {
         Ok(user)
     }
     /// WARNING: returns an empty struct
-    async fn get_anime_episodes(&self, id: u32) -> Result<EpisodesList, MALError> {
+    async fn get_anime_episodes(&self, id: u32, precise_score: bool) -> Result<EpisodesList, MALError> {
         let episodes_list = EpisodesList {
             data: Vec::new(),
             pagination: HashMap::new(),

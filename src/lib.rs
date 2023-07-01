@@ -41,7 +41,7 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt::{Debug, Display};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct MALError {
     pub error: String,
     pub message: Option<String>,
