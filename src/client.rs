@@ -3,13 +3,10 @@ use crate::{model::{
     options::{Params, RankingType, Season, StatusUpdate},
     AnimeDetails, AnimeList, EpisodesList, ForumBoards, ForumTopics, ListStatus, TopicDetails, User,
 }, prelude::EpisodeNode};
-use rand::random;
 use async_trait::async_trait;
 use reqwest::Client;
 use reqwest::{Method, StatusCode};
 use serde::{Deserialize, Serialize};
-#[allow(unused_imports)]
-use simple_log::{debug, info};
 use std::{fs::File, io::Write, path::PathBuf, str, time::SystemTime};
 use tiny_http::{Response, Server};
 
@@ -180,7 +177,8 @@ impl MALClientTrait for MALClient {
     fn get_auth_parts(&self) -> (String, String, String) {
         let verifier = pkce::code_verifier(128);
         let challenge = pkce::code_challenge(&verifier);
-        let state = format!("bruh{}", random::<u8>());
+        let random = Box::into_raw(Box::new(727)) as u16;
+        let state = random.to_string();
         let url = format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id={}&code_challenge={}&state={}", self.client_secret, challenge, state, );
         (url, challenge, state)
     }
@@ -232,7 +230,6 @@ impl MALClientTrait for MALClient {
                 continue;
             }
             let res_raw = i.url();
-            debug!("raw response: {}", res_raw);
             code = res_raw
                 .split_once('=')
                 .unwrap()
