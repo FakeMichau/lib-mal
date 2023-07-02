@@ -144,7 +144,7 @@ impl ClientBuilder {
         let mut token = String::new();
         if will_cache && dir.join("tokens").exists() {
             if let Ok(tokens) = fs::read(dir.join("tokens")) {
-                let mut tok: Tokens = decrypt_tokens(&tokens).unwrap();
+                let mut tok: Tokens = decrypt_tokens(&tokens)?;
                 if let Ok(n) = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
                     if n.as_secs() - tok.today >= u64::from(tok.expires_in) {
                         let params = [
@@ -155,25 +155,30 @@ impl ClientBuilder {
                             .post("https://myanimelist.net/v1/oauth2/token")
                             .form(&params)
                             .send()
-                            .await;
-                        if let Err(e) = res {
-                            return Err(MALError::new(
+                            .await
+                            .map_err(|e| {
+                                MALError::new(
+                                    "Unable to refresh token",
+                                    e.to_string().as_str(),
+                                    None,
+                                )
+                            })?;
+                        let new_toks = serde_json::from_str::<TokenResponse>(
+                            &res.text().await.map_err(|e| {
+                                MALError::new(
+                                    "Unable to refresh token",
+                                    e.to_string().as_str(),
+                                    None,
+                                )
+                            })?,
+                        )
+                        .map_err(|e| {
+                            MALError::new(
                                 "Unable to refresh token",
                                 e.to_string().as_str(),
                                 None,
-                            ));
-                        }
-                        let new_toks = serde_json::from_str::<TokenResponse>(
-                            &res.unwrap().text().await.unwrap(),
-                        );
-                        if let Err(e) = new_toks {
-                            return Err(MALError::new(
-                                "Unable to parse token reponse",
-                                e.to_string().as_str(),
-                                None,
-                            ));
-                        }
-                        let new_toks = new_toks.unwrap();
+                            )
+                        })?;
                         token = new_toks.access_token.clone();
                         tok = Tokens {
                             access_token: new_toks.access_token,
@@ -181,7 +186,13 @@ impl ClientBuilder {
                             expires_in: new_toks.expires_in,
                             today: SystemTime::now()
                                 .duration_since(SystemTime::UNIX_EPOCH)
-                                .unwrap()
+                                .map_err(|e| {
+                                    MALError::new(
+                                        "Unable to get date",
+                                        e.to_string().as_str(),
+                                        None,
+                                    )
+                                })?
                                 .as_secs(),
                         };
 
