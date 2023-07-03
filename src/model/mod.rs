@@ -17,19 +17,19 @@ pub struct AnimeList {
 pub struct ListNode {
     pub node: Anime,
     pub list_status: Option<ListStatus>,
-    pub ranking: Option<HashMap<String, u32>>,
+    pub ranking: Option<HashMap<String, usize>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ListStatus {
     pub status: Option<String>,
-    pub num_episodes_watched: Option<u32>,
+    pub num_episodes_watched: Option<usize>,
     pub score: Option<u8>,
     pub updated_at: Option<String>,
     pub is_rewatching: Option<bool>,
-    pub num_times_rewatched: Option<u32>,
-    pub priority: Option<u32>,
-    pub rewatch_value: Option<u32>,
+    pub num_times_rewatched: Option<usize>,
+    pub priority: Option<usize>,
+    pub rewatch_value: Option<usize>,
     pub tags: Option<Vec<String>>,
     pub comments: Option<String>,
     pub start_date: Option<String>,
@@ -38,7 +38,7 @@ pub struct ListStatus {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Anime {
-    pub id: u32,
+    pub id: usize,
     pub title: String,
     pub main_picture: HashMap<String, Value>,
 }
@@ -52,9 +52,9 @@ pub struct AnimeDetails {
     pub end_date: Option<String>,
     pub synopsis: Option<String>,
     pub mean: Option<f32>,
-    pub rank: Option<u32>,
-    pub num_list_users: Option<u32>,
-    pub num_scoring_users: Option<u32>,
+    pub rank: Option<usize>,
+    pub num_list_users: Option<usize>,
+    pub num_scoring_users: Option<usize>,
     pub nsfw: Option<String>,
     pub created_at: Option<String>,
     pub updated_at: Option<String>,
@@ -62,11 +62,11 @@ pub struct AnimeDetails {
     pub status: Option<String>,
     pub genres: Option<Vec<HashMap<String, Value>>>,
     pub my_list_status: Option<ListStatus>,
-    pub num_episodes: Option<u32>,
+    pub num_episodes: Option<usize>,
     pub start_season: Option<HashMap<String, Value>>,
     pub broadcast: Option<HashMap<String, String>>,
     pub source: Option<String>,
-    pub average_episode_duration: Option<u32>,
+    pub average_episode_duration: Option<usize>,
     pub rating: Option<String>,
     pub pictures: Option<Vec<HashMap<String, String>>>,
     pub background: Option<String>,
@@ -80,7 +80,7 @@ pub struct AnimeDetails {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Stats {
     pub status: HashMap<String, String>,
-    pub num_list_users: u32,
+    pub num_list_users: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -100,12 +100,12 @@ pub struct Related {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Recommnendation {
     pub node: Anime,
-    pub num_recommendations: u32,
+    pub num_recommendations: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
-    pub id: u32,
+    pub id: usize,
     pub name: String,
     pub location: String,
     pub joined_at: String,
@@ -138,12 +138,12 @@ pub struct EpisodesList {
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct EpisodeNode {
-    pub mal_id: Option<u32>,
+    pub mal_id: Option<usize>,
     pub url: Option<String>,
     pub title: Option<String>,
     pub title_japanese: Option<String>,
     pub title_romanji: Option<String>,
-    pub duration: Option<u32>,
+    pub duration: Option<usize>,
     pub aired: Option<String>,
     pub score: Option<f32>,
     pub filler: Option<bool>,

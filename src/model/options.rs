@@ -81,9 +81,9 @@ pub struct StatusUpdate {
     status: Option<Status>,
     is_rewatching: Option<bool>,
     score: Option<u8>,
-    num_watched_episodes: Option<u32>,
+    num_watched_episodes: Option<usize>,
     priority: Option<u8>,
-    num_times_rewatched: Option<u32>,
+    num_times_rewatched: Option<usize>,
     rewatch_value: Option<u8>,
     tags: Option<Vec<String>>,
     comments: Option<String>,
@@ -107,13 +107,13 @@ impl StatusUpdate {
     pub fn score(&mut self, score: u8) {
         self.score = Some(score);
     }
-    pub fn num_watched_episodes(&mut self, num_watched_episodes: u32) {
+    pub fn num_watched_episodes(&mut self, num_watched_episodes: usize) {
         self.num_watched_episodes = Some(num_watched_episodes);
     }
     pub fn priority(&mut self, priority: u8) {
         self.priority = Some(priority);
     }
-    pub fn num_times_rewatched(&mut self, num_times_rewatched: u32) {
+    pub fn num_times_rewatched(&mut self, num_times_rewatched: usize) {
         self.num_times_rewatched = Some(num_times_rewatched);
     }
     pub fn rewatch_value(&mut self, rewatch_value: u8) {
@@ -178,9 +178,9 @@ pub struct StatusBuilder {
     status: Option<Status>,
     is_rewatching: Option<bool>,
     score: Option<u8>,
-    num_watched_episodes: Option<u32>,
+    num_watched_episodes: Option<usize>,
     priority: Option<u8>,
-    num_times_rewatched: Option<u32>,
+    num_times_rewatched: Option<usize>,
     rewatch_value: Option<u8>,
     tags: Option<Vec<String>>,
     comments: Option<String>,
@@ -226,7 +226,7 @@ impl StatusBuilder {
         self
     }
 
-    pub fn num_watched_episodes(mut self, num_watched_episodes: impl Into<Option<u32>>) -> Self {
+    pub fn num_watched_episodes(mut self, num_watched_episodes: impl Into<Option<usize>>) -> Self {
         self.num_watched_episodes = num_watched_episodes.into();
         self
     }
@@ -236,7 +236,7 @@ impl StatusBuilder {
         self
     }
 
-    pub fn num_times_rewatched(mut self, num_times_rewatched: impl Into<Option<u32>>) -> Self {
+    pub fn num_times_rewatched(mut self, num_times_rewatched: impl Into<Option<usize>>) -> Self {
         self.num_times_rewatched = num_times_rewatched.into();
         self
     }

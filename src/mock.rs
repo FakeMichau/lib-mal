@@ -73,7 +73,7 @@ impl MALClientTrait for MockMALClient {
     /// answers for get_anime_details(30230, AnimeFields::ALL)
     async fn get_anime_details(
         &self,
-        id: u32,
+        id: usize,
         fields: impl Into<Option<AnimeFields>> + Send,
     ) -> Result<AnimeDetails, MALError> {
         match id {
@@ -95,7 +95,7 @@ impl MALClientTrait for MockMALClient {
     async fn get_seasonal_anime(
         &self,
         season: Season,
-        year: u32,
+        year: usize,
         limit: impl Into<Option<u8>> + Send,
     ) -> Result<AnimeList, MALError> {
         let seasonal_anime = serde_json::from_str::<AnimeList>(include_str!("test-data/seasonal_anime.json")).unwrap();
@@ -112,7 +112,7 @@ impl MALClientTrait for MockMALClient {
     /// return back given status
     async fn update_user_anime_status(
         &self,
-        id: u32,
+        id: usize,
         update: StatusUpdate,
     ) -> Result<ListStatus, MALError> {
         let update_params: HashMap<&str, String> =
@@ -152,7 +152,7 @@ impl MALClientTrait for MockMALClient {
         let anime_list = serde_json::from_str::<AnimeList>(include_str!("test-data/anime_list.json")).unwrap();
         Ok(anime_list)
     }
-    async fn delete_anime_list_item(&self, id: u32) -> Result<(), MALError> {
+    async fn delete_anime_list_item(&self, id: usize) -> Result<(), MALError> {
         Ok(())
     }
     /// WARNING: returns an empty struct
@@ -165,7 +165,7 @@ impl MALClientTrait for MockMALClient {
     /// WARNING: returns an empty struct
     async fn get_forum_topic_detail(
         &self,
-        topic_id: u32,
+        topic_id: usize,
         limit: impl Into<Option<u8>> + Send,
     ) -> Result<TopicDetails, MALError> {
         let topic_details = TopicDetails {
@@ -177,12 +177,12 @@ impl MALClientTrait for MockMALClient {
     /// WARNING: returns an empty struct
     async fn get_forum_topics(
         &self,
-        board_id: impl Into<Option<u32>> + Send,
-        subboard_id: impl Into<Option<u32>> + Send,
+        board_id: impl Into<Option<usize>> + Send,
+        subboard_id: impl Into<Option<usize>> + Send,
         query: impl Into<Option<String>> + Send,
         topic_user_name: impl Into<Option<String>> + Send,
         user_name: impl Into<Option<String>> + Send,
-        limit: impl Into<Option<u32>> + Send,
+        limit: impl Into<Option<usize>> + Send,
     ) -> Result<ForumTopics, MALError> {
         let forum_topics = ForumTopics {
             data: Vec::new(),
@@ -202,7 +202,7 @@ impl MALClientTrait for MockMALClient {
         Ok(user)
     }
     /// WARNING: returns an empty struct
-    async fn get_anime_episodes(&self, id: u32, precise_score: bool) -> Result<EpisodesList, MALError> {
+    async fn get_anime_episodes(&self, id: usize, precise_score: bool) -> Result<EpisodesList, MALError> {
         let episodes_list = EpisodesList {
             data: Vec::new(),
             pagination: HashMap::new(),

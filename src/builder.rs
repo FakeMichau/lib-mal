@@ -146,7 +146,7 @@ impl ClientBuilder {
             if let Ok(tokens) = fs::read(dir.join("tokens")) {
                 let mut tok: Tokens = decrypt_tokens(&tokens)?;
                 if let Ok(n) = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-                    if n.as_secs() - tok.today >= u64::from(tok.expires_in) {
+                    if n.as_secs() - tok.today >= tok.expires_in as u64 {
                         let params = [
                             ("grant_type", "refresh_token"),
                             ("refesh_token", &tok.refresh_token),

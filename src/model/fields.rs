@@ -3,7 +3,7 @@ use std::fmt::Display;
 
 bitflags! {
     #[derive(Copy, Clone)]
-    pub struct AnimeFields: u32 {
+    pub struct AnimeFields: usize {
         const ID                        = 0b0000_0000_0000_0000_0000_0000_0000_0001;
         const Title                     = 0b0000_0000_0000_0000_0000_0000_0000_0010;
         const MainPicture               = 0b0000_0000_0000_0000_0000_0000_0000_0100;

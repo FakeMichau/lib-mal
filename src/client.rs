@@ -75,7 +75,7 @@ pub trait MALClientTrait {
     ) -> Result<AnimeList, MALError>;
     async fn get_anime_details(
         &self,
-        id: u32,
+        id: usize,
         fields: impl Into<Option<AnimeFields>> + Send,
     ) -> Result<AnimeDetails, MALError>;
     async fn get_anime_ranking(
@@ -86,7 +86,7 @@ pub trait MALClientTrait {
     async fn get_seasonal_anime(
         &self,
         season: Season,
-        year: u32,
+        year: usize,
         limit: impl Into<Option<u8>> + Send,
     ) -> Result<AnimeList, MALError>;
     async fn get_suggested_anime(
@@ -95,28 +95,28 @@ pub trait MALClientTrait {
     ) -> Result<AnimeList, MALError>;
     async fn update_user_anime_status(
         &self,
-        id: u32,
+        id: usize,
         update: StatusUpdate,
     ) -> Result<ListStatus, MALError>;
     async fn get_user_anime_list(&self) -> Result<AnimeList, MALError>;
-    async fn delete_anime_list_item(&self, id: u32) -> Result<(), MALError>;
+    async fn delete_anime_list_item(&self, id: usize) -> Result<(), MALError>;
     async fn get_forum_boards(&self) -> Result<ForumBoards, MALError>;
     async fn get_forum_topic_detail(
         &self,
-        topic_id: u32,
+        topic_id: usize,
         limit: impl Into<Option<u8>> + Send,
     ) -> Result<TopicDetails, MALError>;
     async fn get_forum_topics(
         &self,
-        board_id: impl Into<Option<u32>> + Send,
-        subboard_id: impl Into<Option<u32>> + Send,
+        board_id: impl Into<Option<usize>> + Send,
+        subboard_id: impl Into<Option<usize>> + Send,
         query: impl Into<Option<String>> + Send,
         topic_user_name: impl Into<Option<String>> + Send,
         user_name: impl Into<Option<String>> + Send,
-        limit: impl Into<Option<u32>> + Send,
+        limit: impl Into<Option<usize>> + Send,
     ) -> Result<ForumTopics, MALError>;
     async fn get_my_user_info(&self) -> Result<User, MALError>;
-    async fn get_anime_episodes(&self, id: u32, precise_score: bool) -> Result<EpisodesList, MALError>;
+    async fn get_anime_episodes(&self, id: usize, precise_score: bool) -> Result<EpisodesList, MALError>;
     fn need_auth(&self) -> bool;
 }
 
@@ -315,7 +315,7 @@ impl MALClientTrait for MALClient {
     ///
     async fn get_anime_details(
         &self,
-        id: u32,
+        id: usize,
         fields: impl Into<Option<AnimeFields>> + Send,
     ) -> Result<AnimeDetails, MALError> {
         let url = fields.into().map_or_else(|| format!(
@@ -376,7 +376,7 @@ impl MALClientTrait for MALClient {
     async fn get_seasonal_anime(
         &self,
         season: Season,
-        year: u32,
+        year: usize,
         limit: impl Into<Option<u8>> + Send,
     ) -> Result<AnimeList, MALError> {
         let url = format!(
@@ -438,7 +438,7 @@ impl MALClientTrait for MALClient {
     ///```
     async fn update_user_anime_status(
         &self,
-        id: u32,
+        id: usize,
         update: StatusUpdate,
     ) -> Result<ListStatus, MALError> {
         let params = update.get_params();
@@ -484,7 +484,7 @@ impl MALClientTrait for MALClient {
     ///     # Ok(())
     /// # }
     ///```
-    async fn delete_anime_list_item(&self, id: u32) -> Result<(), MALError> {
+    async fn delete_anime_list_item(&self, id: usize) -> Result<(), MALError> {
         let url = format!("https://api.myanimelist.net/v2/anime/{id}/my_list_status");
         let res = self
             .client
@@ -525,7 +525,7 @@ impl MALClientTrait for MALClient {
     ///Returns details of the specified topic
     async fn get_forum_topic_detail(
         &self,
-        topic_id: u32,
+        topic_id: usize,
         limit: impl Into<Option<u8>> + Send,
     ) -> Result<TopicDetails, MALError> {
         let url = format!(
@@ -540,12 +540,12 @@ impl MALClientTrait for MALClient {
     ///Returns all topics for a given query
     async fn get_forum_topics(
         &self,
-        board_id: impl Into<Option<u32>> + Send,
-        subboard_id: impl Into<Option<u32>> + Send,
+        board_id: impl Into<Option<usize>> + Send,
+        subboard_id: impl Into<Option<usize>> + Send,
         query: impl Into<Option<String>> + Send,
         topic_user_name: impl Into<Option<String>> + Send,
         user_name: impl Into<Option<String>> + Send,
-        limit: impl Into<Option<u32>> + Send,
+        limit: impl Into<Option<usize>> + Send,
     ) -> Result<ForumTopics, MALError> {
         let params = {
             let mut tmp = vec![];
@@ -591,8 +591,8 @@ impl MALClientTrait for MALClient {
     }
 
     /// Returns just the first page
-    async fn get_anime_episodes(&self, id: u32, precise_score: bool) -> Result<EpisodesList, MALError> {
-        let page: u32 = 1;
+    async fn get_anime_episodes(&self, id: usize, precise_score: bool) -> Result<EpisodesList, MALError> {
+        let page: usize = 1;
         let url = format!(
             "https://api.jikan.moe/v4/anime/{id}/episodes?page={page}",
         );
@@ -726,7 +726,7 @@ impl MALClient {
     }
 
     /// Returns just the scores from the first page
-    async fn get_raw_episodes_score(&self, id: u32, offset: u32) -> Result<Vec<EpisodeNode>, MALError> {
+    async fn get_raw_episodes_score(&self, id: usize, offset: usize) -> Result<Vec<EpisodeNode>, MALError> {
         let url = format!("https://myanimelist.net/anime/{id}/1/episode?offset={offset}");
         let res = self.do_request(url).await?;
 
@@ -742,10 +742,10 @@ impl MALClient {
             .unwrap_or_default()
             .split('/')
             .map(|value| {
-                value.replace(',', "").parse().unwrap_or_default()
+                value.replace(',', "").parse::<usize>().unwrap_or_default()
             });
 
-        let present_episodes: i64 = episodes_range_iter.next().unwrap_or_default();
+        let present_episodes = episodes_range_iter.next().unwrap_or_default();
 
         if present_episodes == 0 {
             return Ok(Vec::new());
@@ -763,7 +763,7 @@ impl MALClient {
                     .and_then(|mut v| v.next())
                     .map(str::parse::<f32>)
                     .and_then(Result::ok);
-                (u32::try_from(i).unwrap_or_default() + 1 + offset, score)
+                (usize::try_from(i).unwrap_or_default() + 1 + offset, score)
             })
             .filter(|(_, score)| score.is_some())
             .map(|(k, score)| {
@@ -781,7 +781,7 @@ impl MALClient {
 #[derive(Deserialize)]
 pub struct TokenResponse {
     pub token_type: String,
-    pub expires_in: u32,
+    pub expires_in: usize,
     pub access_token: String,
     pub refresh_token: String,
 }
@@ -790,7 +790,7 @@ pub struct TokenResponse {
 pub struct Tokens {
     pub access_token: String,
     pub refresh_token: String,
-    pub expires_in: u32,
+    pub expires_in: usize,
     pub today: u64,
 }
 
