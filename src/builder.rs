@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::time::SystemTime;
 
 use crate::client::{decrypt_tokens, encrypt_token, TokenResponse, Tokens};
-use crate::{MALError, MALClientTrait};
+use crate::{MALClientTrait, MALError};
 
 ///# Example
 ///```
@@ -136,10 +136,13 @@ impl ClientBuilder {
         let mut will_cache = self.caching;
         let mut n_a = false;
 
-        let dir = self.dirs.map_or_else(|| {
-            will_cache = false;
-            PathBuf::new()
-        }, |d| d);
+        let dir = self.dirs.map_or_else(
+            || {
+                will_cache = false;
+                PathBuf::new()
+            },
+            |d| d,
+        );
 
         let mut token = String::new();
         if will_cache && dir.join("tokens").exists() {
@@ -178,11 +181,7 @@ impl ClientBuilder {
                             })?,
                         )
                         .map_err(|e| {
-                            MALError::new(
-                                "Unable to refresh token",
-                                e.to_string().as_str(),
-                                None,
-                            )
+                            MALError::new("Unable to refresh token", e.to_string().as_str(), None)
                         })?;
                         token = new_toks.access_token.clone();
                         tok = Tokens {

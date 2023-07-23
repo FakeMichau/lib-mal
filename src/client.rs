@@ -1,8 +1,12 @@
-use crate::{model::{
-    fields::AnimeFields,
-    options::{Params, RankingType, Season, StatusUpdate},
-    AnimeDetails, AnimeList, EpisodesList, ForumBoards, ForumTopics, ListStatus, TopicDetails, User,
-}, prelude::EpisodeNode};
+use crate::{
+    model::{
+        fields::AnimeFields,
+        options::{Params, RankingType, Season, StatusUpdate},
+        AnimeDetails, AnimeList, EpisodesList, ForumBoards, ForumTopics, ListStatus, TopicDetails,
+        User,
+    },
+    prelude::EpisodeNode,
+};
 use async_trait::async_trait;
 use reqwest::Client;
 use reqwest::{Method, StatusCode};
@@ -116,7 +120,11 @@ pub trait MALClientTrait {
         limit: impl Into<Option<usize>> + Send,
     ) -> Result<ForumTopics, MALError>;
     async fn get_my_user_info(&self) -> Result<User, MALError>;
-    async fn get_anime_episodes(&self, id: usize, precise_score: bool) -> Result<EpisodesList, MALError>;
+    async fn get_anime_episodes(
+        &self,
+        id: usize,
+        precise_score: bool,
+    ) -> Result<EpisodesList, MALError>;
     fn need_auth(&self) -> bool;
 }
 
@@ -130,7 +138,14 @@ impl MALClientTrait for MALClient {
         caching: bool,
         need_auth: bool,
     ) -> Self {
-        Self { client_secret, dirs, access_token, client, caching, need_auth }
+        Self {
+            client_secret,
+            dirs,
+            access_token,
+            client,
+            caching,
+            need_auth,
+        }
     }
     ///Creates a client using provided token. Caching is disable by default.
     ///
@@ -318,11 +333,16 @@ impl MALClientTrait for MALClient {
         id: usize,
         fields: impl Into<Option<AnimeFields>> + Send,
     ) -> Result<AnimeDetails, MALError> {
-        let url = fields.into().map_or_else(|| format!(
-                "https://api.myanimelist.net/v2/anime/{}?fields={}",
-                id,
-                AnimeFields::ALL
-            ), |f| format!("https://api.myanimelist.net/v2/anime/{id}?fields={f}"));
+        let url = fields.into().map_or_else(
+            || {
+                format!(
+                    "https://api.myanimelist.net/v2/anime/{}?fields={}",
+                    id,
+                    AnimeFields::ALL
+                )
+            },
+            |f| format!("https://api.myanimelist.net/v2/anime/{id}?fields={f}"),
+        );
         let res = self.do_request(url).await?;
         Self::parse_response(&res)
     }
@@ -591,11 +611,13 @@ impl MALClientTrait for MALClient {
     }
 
     /// Returns just the first page
-    async fn get_anime_episodes(&self, id: usize, precise_score: bool) -> Result<EpisodesList, MALError> {
+    async fn get_anime_episodes(
+        &self,
+        id: usize,
+        precise_score: bool,
+    ) -> Result<EpisodesList, MALError> {
         let page: usize = 1;
-        let url = format!(
-            "https://api.jikan.moe/v4/anime/{id}/episodes?page={page}",
-        );
+        let url = format!("https://api.jikan.moe/v4/anime/{id}/episodes?page={page}",);
         let res = self.do_request(url).await?;
         let mut api: Result<EpisodesList, MALError> = match serde_json::from_str(&res) {
             Ok(list) => Ok(list),
@@ -712,21 +734,26 @@ impl MALClient {
     }
 
     ///Tries to parse a JSON response string into the type provided in the `::<>` turbofish
-    fn parse_response<'a, T: Serialize + Deserialize<'a>>(
-        res: &'a str,
-    ) -> Result<T, MALError> {
-        serde_json::from_str::<T>(res).map_or_else(|_| Err(match serde_json::from_str::<MALError>(res) {
-                Ok(o) => o,
-                Err(e) => MALError::new(
-                    "unable to parse response",
-                    &format!("{e}"),
-                    res.to_string(),
-                ),
-            }), |v| Ok(v))
+    fn parse_response<'a, T: Serialize + Deserialize<'a>>(res: &'a str) -> Result<T, MALError> {
+        serde_json::from_str::<T>(res).map_or_else(
+            |_| {
+                Err(match serde_json::from_str::<MALError>(res) {
+                    Ok(o) => o,
+                    Err(e) => {
+                        MALError::new("unable to parse response", &format!("{e}"), res.to_string())
+                    }
+                })
+            },
+            |v| Ok(v),
+        )
     }
 
     /// Returns just the scores from the first page
-    async fn get_raw_episodes_score(&self, id: usize, offset: usize) -> Result<Vec<EpisodeNode>, MALError> {
+    async fn get_raw_episodes_score(
+        &self,
+        id: usize,
+        offset: usize,
+    ) -> Result<Vec<EpisodeNode>, MALError> {
         let url = format!("https://myanimelist.net/anime/{id}/1/episode?offset={offset}");
         let res = self.do_request(url).await?;
 
@@ -741,9 +768,7 @@ impl MALClient {
             .next()
             .unwrap_or_default()
             .split('/')
-            .map(|value| {
-                value.replace(',', "").parse::<usize>().unwrap_or_default()
-            });
+            .map(|value| value.replace(',', "").parse::<usize>().unwrap_or_default());
 
         let present_episodes = episodes_range_iter.next().unwrap_or_default();
 
@@ -763,15 +788,13 @@ impl MALClient {
                     .and_then(|mut v| v.next())
                     .map(str::parse::<f32>)
                     .and_then(Result::ok);
-                (usize::try_from(i).unwrap_or_default() + 1 + offset, score)
+                (i + 1 + offset, score)
             })
             .filter(|(_, score)| score.is_some())
-            .map(|(k, score)| {
-                EpisodeNode {
-                    mal_id: Some(k),
-                    score,
-                    ..Default::default()
-                }
+            .map(|(k, score)| EpisodeNode {
+                mal_id: Some(k),
+                score,
+                ..Default::default()
             })
             .collect();
         Ok(episodes_score)
