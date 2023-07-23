@@ -147,9 +147,14 @@ impl ClientBuilder {
                 let mut tok: Tokens = decrypt_tokens(&tokens)?;
                 if let Ok(n) = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
                     if n.as_secs() - tok.today >= tok.expires_in as u64 {
+                        let secret = self
+                            .client_secret
+                            .clone()
+                            .ok_or_else(|| MALError::new("", "Can't get client secret", None))?;
                         let params = [
+                            ("client_id", secret.as_str()),
                             ("grant_type", "refresh_token"),
-                            ("refesh_token", &tok.refresh_token),
+                            ("refresh_token", &tok.refresh_token),
                         ];
                         let res = client
                             .post("https://myanimelist.net/v1/oauth2/token")
