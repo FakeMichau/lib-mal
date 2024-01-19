@@ -1,5 +1,4 @@
 use std::{path::PathBuf, collections::HashMap, str::FromStr};
-use async_trait::async_trait;
 use reqwest::Client;
 use crate::{MALClientTrait, MALError, prelude::{AnimeList, fields::AnimeFields, AnimeDetails, options::{RankingType, Season, StatusUpdate, Params}, ListStatus, ForumBoards, TopicDetails, ForumTopics, User, EpisodesList}};
 
@@ -13,7 +12,6 @@ pub struct MockMALClient {
     pub give_error: bool,
 }
 
-#[async_trait]
 impl MALClientTrait for MockMALClient {
     fn new(
         client_secret: String,
@@ -61,7 +59,7 @@ impl MALClientTrait for MockMALClient {
     fn get_access_token(&self) -> &str {
         &self.access_token
     }
-    /// answers for get_anime_list("one", Some(4))
+    /// answers for `get_anime_list("one", Some(4))`
     async fn get_anime_list(
         &self,
         query: &str,
@@ -70,7 +68,7 @@ impl MALClientTrait for MockMALClient {
         let anime_list = serde_json::from_str::<AnimeList>(include_str!("test-data/anime_list.json")).unwrap();
         Ok(anime_list)
     }
-    /// answers for get_anime_details(30230, AnimeFields::ALL)
+    /// answers for `get_anime_details(30230, AnimeFields::ALL)`
     async fn get_anime_details(
         &self,
         id: usize,
@@ -82,7 +80,7 @@ impl MALClientTrait for MockMALClient {
             _ => Err(MALError::new("Not found", "error", Some(String::from("info")))),
         }
     }
-    /// answers for get_anime_ranking(RankingType::All, Some(4))
+    /// answers for `get_anime_ranking(RankingType::All, Some(4))`
     async fn get_anime_ranking(
         &self,
         ranking_type: RankingType,
@@ -91,7 +89,7 @@ impl MALClientTrait for MockMALClient {
         let anime_ranking = serde_json::from_str::<AnimeList>(include_str!("test-data/anime_ranking.json")).unwrap();
         Ok(anime_ranking)
     }
-    /// likely answers for get_seasonal_anime(Season::Summer, 2017, Some(4))
+    /// likely answers for `get_seasonal_anime(Season::Summer, 2017, Some(4))`
     async fn get_seasonal_anime(
         &self,
         season: Season,
@@ -101,7 +99,7 @@ impl MALClientTrait for MockMALClient {
         let seasonal_anime = serde_json::from_str::<AnimeList>(include_str!("test-data/seasonal_anime.json")).unwrap();
         Ok(seasonal_anime)
     }
-    /// WARNING: answers like get_anime_list("one", Some(4)) would
+    /// WARNING: answers like `get_anime_list("one", Some(4))` would
     async fn get_suggested_anime(
         &self,
         limit: impl Into<Option<u8>> + Send,
@@ -147,7 +145,7 @@ impl MALClientTrait for MockMALClient {
         };
         Ok(list_status)
     }
-    /// WARNING: answers like get_anime_list("one", Some(4)) would
+    /// WARNING: answers like `get_anime_list("one", Some(4))` would
     async fn get_user_anime_list(&self) -> Result<AnimeList, MALError> {
         let anime_list = serde_json::from_str::<AnimeList>(include_str!("test-data/anime_list.json")).unwrap();
         Ok(anime_list)
@@ -190,7 +188,7 @@ impl MALClientTrait for MockMALClient {
         };
         Ok(forum_topics)
     }
-    /// WARNING: anime_statistics are empty
+    /// WARNING: `anime_statistics` are empty
     async fn get_my_user_info(&self) -> Result<User, MALError> {
         let user = User {
             id: 727,

@@ -20,7 +20,6 @@ pkce = "0.2"
 serde = { version = "1.0", default-features = false, features = ["serde_derive"] }
 serde_json = "1.0"
 bitflags = "2.3"
-async-trait = "0.1.68"
 
 [dev-dependencies]
 tokio = { version = "1.28.2", default-features = false, features = ["macros"] }

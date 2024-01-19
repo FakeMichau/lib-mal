@@ -7,7 +7,6 @@ use crate::{
     },
     prelude::EpisodeNode,
 };
-use async_trait::async_trait;
 use reqwest::Client;
 use reqwest::{Method, StatusCode};
 use serde::{Deserialize, Serialize};
@@ -51,7 +50,6 @@ pub struct MALClient {
     pub need_auth: bool,
 }
 
-#[async_trait]
 pub trait MALClientTrait {
     fn new(
         client_secret: String,
@@ -65,52 +63,52 @@ pub trait MALClientTrait {
     fn set_cache_dir(&mut self, dir: PathBuf);
     fn set_caching(&mut self, caching: bool);
     fn get_auth_parts(&self) -> (String, String, String);
-    async fn auth(
+    fn auth(
         &mut self,
         callback_url: &str,
         challenge: &str,
         state: &str,
-    ) -> Result<(), MALError>;
+    ) -> impl std::future::Future<Output = Result<(), MALError>> + Send;
     fn get_access_token(&self) -> &str;
-    async fn get_anime_list(
+    fn get_anime_list(
         &self,
         query: &str,
         limit: impl Into<Option<u8>> + Send,
-    ) -> Result<AnimeList, MALError>;
-    async fn get_anime_details(
+    ) -> impl std::future::Future<Output = Result<AnimeList, MALError>> + Send;
+    fn get_anime_details(
         &self,
         id: usize,
         fields: impl Into<Option<AnimeFields>> + Send,
-    ) -> Result<AnimeDetails, MALError>;
-    async fn get_anime_ranking(
+    ) -> impl std::future::Future<Output = Result<AnimeDetails, MALError>> + Send;
+    fn get_anime_ranking(
         &self,
         ranking_type: RankingType,
         limit: impl Into<Option<u8>> + Send,
-    ) -> Result<AnimeList, MALError>;
-    async fn get_seasonal_anime(
+    ) -> impl std::future::Future<Output = Result<AnimeList, MALError>> + Send;
+    fn get_seasonal_anime(
         &self,
         season: Season,
         year: usize,
         limit: impl Into<Option<u8>> + Send,
-    ) -> Result<AnimeList, MALError>;
-    async fn get_suggested_anime(
+    ) -> impl std::future::Future<Output = Result<AnimeList, MALError>> + Send;
+    fn get_suggested_anime(
         &self,
         limit: impl Into<Option<u8>> + Send,
-    ) -> Result<AnimeList, MALError>;
-    async fn update_user_anime_status(
+    ) -> impl std::future::Future<Output = Result<AnimeList, MALError>> + Send;
+    fn update_user_anime_status(
         &self,
         id: usize,
         update: StatusUpdate,
-    ) -> Result<ListStatus, MALError>;
-    async fn get_user_anime_list(&self) -> Result<AnimeList, MALError>;
-    async fn delete_anime_list_item(&self, id: usize) -> Result<(), MALError>;
-    async fn get_forum_boards(&self) -> Result<ForumBoards, MALError>;
-    async fn get_forum_topic_detail(
+    ) -> impl std::future::Future<Output = Result<ListStatus, MALError>> + Send;
+    fn get_user_anime_list(&self) -> impl std::future::Future<Output = Result<AnimeList, MALError>> + Send;
+    fn delete_anime_list_item(&self, id: usize) -> impl std::future::Future<Output = Result<(), MALError>> + Send;
+    fn get_forum_boards(&self) -> impl std::future::Future<Output = Result<ForumBoards, MALError>> + Send;
+    fn get_forum_topic_detail(
         &self,
         topic_id: usize,
         limit: impl Into<Option<u8>> + Send,
-    ) -> Result<TopicDetails, MALError>;
-    async fn get_forum_topics(
+    ) -> impl std::future::Future<Output = Result<TopicDetails, MALError>> + Send;
+    fn get_forum_topics(
         &self,
         board_id: impl Into<Option<usize>> + Send,
         subboard_id: impl Into<Option<usize>> + Send,
@@ -118,17 +116,16 @@ pub trait MALClientTrait {
         topic_user_name: impl Into<Option<String>> + Send,
         user_name: impl Into<Option<String>> + Send,
         limit: impl Into<Option<usize>> + Send,
-    ) -> Result<ForumTopics, MALError>;
-    async fn get_my_user_info(&self) -> Result<User, MALError>;
-    async fn get_anime_episodes(
+    ) -> impl std::future::Future<Output = Result<ForumTopics, MALError>> + Send;
+    fn get_my_user_info(&self) -> impl std::future::Future<Output = Result<User, MALError>> + Send;
+    fn get_anime_episodes(
         &self,
         id: usize,
         precise_score: bool,
-    ) -> Result<EpisodesList, MALError>;
+    ) -> impl std::future::Future<Output = Result<EpisodesList, MALError>> + Send;
     fn need_auth(&self) -> bool;
 }
 
-#[async_trait]
 impl MALClientTrait for MALClient {
     fn new(
         client_secret: String,
@@ -175,7 +172,7 @@ impl MALClientTrait for MALClient {
     ///Returns the auth URL and code challenge which will be needed to authorize the user.
     ///
     ///# Example
-    ///#[async_trait]
+    ///#[`async_trait`]
     ///```no_run
     ///     use lib_mal::ClientBuilder;
     ///     # use  lib_mal::MALError;
